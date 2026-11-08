@@ -886,7 +886,9 @@ const overlay = $('#overlay'), coSlot = $('#co-slot'), arcLbl = $('#arc-lbl'), s
 let countKey = '', railKey = '';
 /* spec-sheet counter ("03 / 13": which beat of the page's story is playing) and the progress rail, both read from the same timeline */
 function updateStageChrome(pos, sg) {
-  if (sg && sg.name !== 'hold' && !sg.link) { const n = tl.names.length, i = tl.names.indexOf(sg.name) + 1, k = i + '/' + n; if (k !== countKey) { countKey = k; const pad = (v) => String(v).padStart(2, '0'); stageCount.innerHTML = `<b>${pad(i)}</b> / ${pad(n)}`; } }
+  if (sg) {   // a hold or a glide between chapters shows the nearest beat before it (or the first one after it)
+    let name = sg.name; if (name === 'hold' || sg.link) { const at = tl.segs.indexOf(sg); name = ''; for (let j = at; j >= 0 && !name; j--) if (tl.segs[j].name !== 'hold' && !tl.segs[j].link) name = tl.segs[j].name; for (let j = at; j < tl.segs.length && !name; j++) if (tl.segs[j].name !== 'hold' && !tl.segs[j].link) name = tl.segs[j].name; }
+    const n = tl.names.length, i = tl.names.indexOf(name) + 1, k = i + '/' + n; if (k !== countKey) { countKey = k; const pad = (v) => String(v).padStart(2, '0'); stageCount.innerHTML = `<b>${pad(i)}</b> / ${pad(n)}`; } }
   const P = Math.min(1, Math.max(0, pos / layout.D)).toFixed(3); if (P !== railKey) { railKey = P; railEl.style.setProperty('--p', P); }
 }
 const grabDim = (g) => ({ g, l: $('.l', g), t1: $('.t1', g), t2: $('.t2', g), ld: $('.ld', g), tx: $('text', g), last: -1 });
