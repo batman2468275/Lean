@@ -20,7 +20,8 @@
     "interact:suggestions": "node tools/suggestions_flow.cjs",
     "interact:intro": "node tools/intro_test.cjs",
     "test:media": "node tools/media_test.cjs",
-    "test:a11y": "node tools/a11y.cjs"
+    "test:a11y": "node tools/a11y.cjs",
+    "measure:scroll": "node tools/pagelen.cjs"
   },
   "keywords": [],
   "author": "",

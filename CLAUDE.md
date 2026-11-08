@@ -1,6 +1,6 @@
 # Lean: phone stand website
 
-Marketing and ordering site for **Lean**, a 3D-printed phone stand made by Astrofield Corporation. A real 3D model of the stand animates as the visitor scrolls. It is a small multi-page app (7 pages, 2 footer-only pages and a hidden admin page) with **one persistent WebGL canvas**, plus a small Node backend for the public ideas board.
+Marketing and ordering site for **Lean**, a 3D-printed phone stand. A real 3D model of the stand animates as the visitor scrolls. It is a small multi-page app (7 pages, 2 footer-only pages and a hidden admin page) with **one persistent WebGL canvas**, plus a small Node backend for the public ideas board.
 
 Read this file first. Deeper notes: `docs/magsafe.md`, `docs/magsafe-feasibility.md`, `docs/suggestions.md`, `docs/hosting.md`, `docs/branding.md`, `docs/animation-check/` (contact sheets).
 
@@ -9,7 +9,7 @@ Read this file first. Deeper notes: `docs/magsafe.md`, `docs/magsafe-feasibility
 Done: products, prices and colours in `CONFIG`; MagSafe add-on (design, print files, site); the dark tech theme with nature levels (v2's natural look was rejected as too nature-like); separate pages on one canvas; the named-beat animation system; the Suggestions board with moderation; accessibility and performance pass.
 
 **Not done / owner must do** (nothing here may be invented by a developer):
-- Every `[EDIT: ...]` placeholder (`mark.edit`): About (Astrofield, the Lean story), Shipping and returns, Privacy (retention, removal, contact). `grep -rn "\[EDIT" src`.
+- Every `[EDIT: ...]` placeholder (`mark.edit`): About (the Lean story), Shipping and returns, Privacy (retention, removal, contact). `grep -rn "\[EDIT" src`.
 - **There is no checkout.** "Add to bag" builds real bag lines and shows a toast; nothing is sent anywhere.
 - **Suggestions storage is a local JSON file because the owner chose a demo.** It needs the Node server and is not for production (below).
 - **Physical tests before selling MagSafe** (see "Physical tests needed"). Nothing about the magnets has been tried on a real phone or printer.
@@ -23,7 +23,7 @@ Done: products, prices and colours in `CONFIG`; MagSafe add-on (design, print fi
 - Name: **Lean**. The logo is a **cursive script wordmark**: "Lea" in a monoline script (Sacramento, SIL OFL) and a final **"n" that is the stand's own side profile**, so the word literally turns into the product. The tail of the "a" flows into the lip hook of the "n".
 - The wordmark is **data, not a font**: `src/logo.json` (`letters`, `n`, `viewBox`, `stroke`). Regenerate with `python3 tools/logo/make_logo.py 0 14 0` (slant of the n in degrees, n x offset, n y offset; `0 14 0` is the chosen setting; needs `fonttools`). Sacramento's licence is `tools/logo/OFL-Sacramento.txt` and must stay with the font file.
 - `npm run build` also writes standalone files to `assets/logo/` (on-dark, on-light, black SVGs, favicon). Use them for the favicon, social images and print.
-- Do **not** write "by Astrofield" next to the logo. Astrofield Corporation appears only as the company name in About and the footer.
+- **No company names anywhere.** No company or "by" line next to the wordmark or anywhere else on the site, in the footer, About, Privacy, Shipping and returns, meta tags, the docs or the repo text. The footer says `&copy; 2026 Lean` and nothing more. `tests/no-business-refs.test.mjs` fails the build if one comes back. The only name that may appear is the wordmark font's own licence file (`tools/logo/OFL-Sacramento.txt`), which the OFL requires.
 - Letters take the page text colour (`currentColor`); the "n" uses `--n-ink` (electric green on dark, a deeper green on paper; 3:1 on every tone). On the stand the whole wordmark is one ink (dark on light stands, white on Black). Small sizes get a heavier stroke (`%%LOGO:5%%` nav, `%%LOGO:1.5%%` hero, `LOGO_EXTRA` for the decal).
 - Keep the wordmark identical everywhere; never retype it in a font; never slant, stretch or recolour the "n" separately.
 - Voice: short, plain, no hype. "Charge where it stands."

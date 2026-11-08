@@ -32,7 +32,7 @@
   --charcoal-3: #1c201d;
   --deep: #080a09;
   --white: #f4f6f4;
-  --electric: #35f07f;        /* UI accent (Astrofield's charcoal-and-electric-green pairing) */
+  --electric: #35f07f;        /* UI accent (a charcoal-and-electric-green pairing) */
   --electric-hi: #5af79a;
   --electric-ink: #04210f;    /* text on an electric-green fill */
   --paper: #f1f3f0;
@@ -422,7 +422,7 @@ html[data-nature="2"] .panel { border-top-color: transparent; }
 h1 em, h2 em { font-style: normal; color: var(--accent-text); }   /* no italics: emphasis is the electric green */
 .about p { color: var(--text-2); font-size: clamp(17px, 1.5vw, 20px); line-height: 1.5; margin: 0 0 20px; max-width: 46ch; }
 .about p strong { color: var(--text); font-weight: 600; }
-.about-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: clamp(48px, 8vw, 96px); border-top: 1px solid var(--line); }
+.about-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin-top: clamp(48px, 8vw, 96px); border-top: 1px solid var(--line); }
 .about-facts div { padding: 26px 22px 0 0; }
 .about-facts dt { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
 .about-facts dd { margin: 0; font-size: 19px; letter-spacing: -.015em; }
@@ -764,7 +764,7 @@ html:not(.ready) #foot { visibility: hidden; }
 <footer data-tone="deep" id="foot">
   <svg class="wave" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 100V60C60 20 150 20 205 60S350 100 411 60S560 20 616 60S760 100 822 60S970 20 1027 60S1170 100 1233 60S1380 20 1440 52V100Z"/></svg>
   <div class="wrap">
-    <span>&copy; 2026 Astrofield Corporation. All rights reserved.</span>
+    <span>&copy; 2026 Lean</span>
     <nav aria-label="Footer">
       <a href="/models">Models</a><a href="/design">Design</a><a href="/colors">Colors</a><a href="/customize">Customize</a><a href="/about">About</a><a href="/suggestions">Suggestions</a><a href="/shipping-returns">Shipping &amp; returns</a><a href="/privacy">Privacy</a>
     </nav>
@@ -5133,7 +5133,7 @@ void main() {
       <div class="rv"><h3 data-vname="plain"></h3><p>You want a stand for your phone and charge it some other way, or not at the desk. The simplest and cheapest.</p></div>
       <div class="rv"><h3 data-vname="cutout"></h3><p>You want the cable to stay plugged in while the phone stands. The slot in the base lets it pass through.</p></div>
     </div>
-    <p class="fine rv">MagSafe-compatible magnets are an optional extra on either model. They hold the phone; they do not charge it, and charging always goes through the cable. MagSafe is a trademark of Apple Inc. Lean is not made, approved or endorsed by Apple.</p>
+    <p class="fine rv">MagSafe-compatible magnets are an optional extra on either model. They hold the phone; they do not charge it, and charging always goes through the cable. MagSafe is a trademark of Apple. Lean is not made, approved or endorsed by Apple.</p>
     <div class="cta rv"><a class="btn primary" href="/customize#order">Customize and buy</a></div>
   </div>
 </section>
@@ -5323,17 +5323,15 @@ void main() {
   <svg class="wave" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 100V46C180 -6 300 6 430 44C560 82 690 96 830 60C970 24 1090 -4 1220 28C1320 52 1390 56 1440 40V100Z"/></svg>
   <svg class="vine" viewBox="0 0 160 900" preserveAspectRatio="xMinYMax meet" aria-hidden="true" focusable="false"><use href="#vine-art"/></svg>
   <div class="wrap">
-    <p class="eyebrow rv">Who we are</p>
+    <p class="eyebrow rv">The idea</p>
     <div class="about">
-      <h2 class="rv">Made by <em>Astrofield</em>.</h2>
+      <h2 class="rv">Why Lean <em>exists</em>.</h2>
       <div class="rv">
-        <p><strong>Astrofield Corporation</strong> <mark class="edit">[EDIT: one or two sentences about who Astrofield is and what it does]</mark></p>
         <p>A phone stand should not make you choose between propping your phone up and charging it. So the <span data-vname="cutout"></span> model has a slot in the base: the cable passes through and the phone keeps charging while it leans.</p>
         <p>We keep the range small, the shapes simple and the colors yours to choose. <mark class="edit">[EDIT: the Lean story, in your words]</mark></p>
       </div>
     </div>
     <dl class="about-facts rv">
-      <div><dt>Company</dt><dd>Astrofield Corporation</dd></div>
       <div><dt>Made</dt><dd><mark class="edit">[EDIT: where it is made]</mark></dd></div>
       <div><dt>Made to order</dt><dd>Your color, your text</dd></div>
     </dl>
@@ -5394,14 +5392,14 @@ void main() {
   <div class="wrap legal">
     <p class="eyebrow rv">Shipping & returns</p>
     <h1 class="rv t">Shipping & returns</h1>
-    <h2 class="rv">Shipping</h2><p class="rv"><mark class="edit">[EDIT: where you ship to, how long it takes, what it costs. Lean is made to order, so say how long printing takes.]</mark></p><h2 class="rv">Returns</h2><p class="rv"><mark class="edit">[EDIT: the return window, the condition the stand must be in, and how to start a return. Say whether personalised (text) stands can be returned.]</mark></p><h2 class="rv">Problems</h2><p class="rv"><mark class="edit">[EDIT: who to contact if something arrives damaged, and how fast you reply.]</mark></p>
+    <h2 class="rv">Shipping</h2><p class="rv"><mark class="edit">[EDIT: where you ship to, how long it takes, what it costs. Lean is made to order, so say how long printing takes.]</mark></p><h2 class="rv">Returns</h2><p class="rv"><mark class="edit">[EDIT: the return window, the condition the stand must be in, and how to start a return. Say whether personalised (text) stands can be returned.]</mark></p><h2 class="rv">Problems and questions</h2><p class="rv">If something arrives damaged, or you have a question, write to <mark class="edit">[EDIT: contact email]</mark>. <mark class="edit">[EDIT: how fast you reply]</mark></p>
   </div>
 </section>
 `;var Jp=`<section class="panel page-head" id="privacy" data-tone="dark">
   <div class="wrap legal">
     <p class="eyebrow rv">Privacy</p>
     <h1 class="rv t">Privacy</h1>
-    <h2 class="rv">What this site does</h2><p class="rv"><mark class="edit">[EDIT: confirm.] This site uses no third-party trackers. Your choices (model, color, options) and your bag are kept in your browser for the session only and are not sent anywhere. The one exception is the ideas board, below.</mark></p><h2 class="rv">The ideas board</h2><p class="rv">If you send an idea, we store the text, the name you typed (optional), and the time. To limit spam we also keep a scrambled (salted, one-way hashed) form of your IP address, never the address itself. If you vote, your browser keeps a random id in local storage and we store only a hash of it, so one browser counts once. Ideas are read before they appear, and they are public once approved, so please leave out personal details. <mark class="edit">[EDIT: how long ideas are kept, and how to ask for one to be removed.]</mark></p><h2 class="rv">Orders and email</h2><p class="rv"><mark class="edit">[EDIT: what you collect when someone orders or sends a suggestion (name, email, address), why, how long you keep it, who sees it, and how to ask for deletion.]</mark></p><h2 class="rv">Contact</h2><p class="rv"><mark class="edit">[EDIT: contact email for privacy requests.]</mark></p>
+    <h2 class="rv">What this site does</h2><p class="rv"><mark class="edit">[EDIT: confirm.] This site uses no third-party trackers. Your choices (model, color, options) and your bag are kept in your browser for the session only and are not sent anywhere. The one exception is the ideas board, below.</mark></p><h2 class="rv">The ideas board</h2><p class="rv">If you send an idea, we store the text, the name you typed (optional), and the time. To limit spam we also keep a scrambled (salted, one-way hashed) form of your IP address, never the address itself. If you vote, your browser keeps a random id in local storage and we store only a hash of it, so one browser counts once. Ideas are read before they appear, and they are public once approved, so please leave out personal details. <mark class="edit">[EDIT: how long ideas are kept, and how to ask for one to be removed.]</mark></p><h2 class="rv">Orders and email</h2><p class="rv"><mark class="edit">[EDIT: what you collect when someone orders or sends a suggestion (name, email, address), why, how long you keep it, who sees it, and how to ask for deletion.]</mark></p><h2 class="rv">Contact</h2><p class="rv"><mark class="edit">[EDIT: contact email]</mark></p>
   </div>
 </section>
 `;var Kp=`<section class="panel page-head" id="admin" data-tone="dark">

@@ -1,6 +1,6 @@
 # MagSafe add-on: build spec and test plan
 
-The add-on is **passive magnets only**. It holds a MagSafe iPhone against the stand. It does **not** charge it (charging stays on the cable, through the base of the With cutout model). Use "MagSafe-compatible" wording, say nothing that suggests Apple endorses Lean, and use no Apple logos. Suggested fine print: "MagSafe is a trademark of Apple Inc. Lean is not made, approved or endorsed by Apple."
+The add-on is **passive magnets only**. It holds a MagSafe iPhone against the stand. It does **not** charge it (charging stays on the cable, through the base of the With cutout model). Use "MagSafe-compatible" wording, say nothing that suggests Apple endorses Lean, and use no Apple logos. Suggested fine print: "MagSafe is a trademark of Apple. Lean is not made, approved or endorsed by Apple."
 
 Background, and why it is an arc and not a full ring: `docs/magsafe-feasibility.md`.
 

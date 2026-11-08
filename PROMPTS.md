@@ -35,7 +35,7 @@ Pages, each with its own URL, title and meta description:
   /colors      The six colors plus custom
   /customize   The studio: model, color, logo or text, front or back
   /specs       Measurements and the profile drawing
-  /about       Who we are (Astrofield Corporation, the Lean story)
+  /about       Why Lean exists (the Lean story)
   /buy         Price, options, quantity, bag
   /next        "What should we make next?" (placeholder for now, built in prompt 5)
 
@@ -45,7 +45,7 @@ Requirements:
 - Shared state (model, color, logo mode, text, placement, quantity, bag count) lives in one store that survives navigation (sessionStorage) and can be set from the URL, for example /buy?model=cutout&color=orange.
 - Shared nav and footer. The current page is highlighted. Mobile menu works. Prices come only from CONFIG.
 - Keep prefers-reduced-motion and the no-WebGL fallback working.
-- Keep the Lean wordmark (cursive "Lea" plus the "n" that is the stand profile, from src/logo.json) and do not add "by Astrofield" anywhere near it. Do not add image upload.
+- Keep the Lean wordmark (cursive "Lea" plus the "n" that is the stand profile, from src/logo.json) and do not put a company or "by" line anywhere near it. Do not add image upload.
 
 Finish by running the screenshot tools for every page at 1440x900 and 390x844, look at them, and fix what is off. Summarise what you changed and anything you decided on my behalf.
 ```

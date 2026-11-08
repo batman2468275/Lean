@@ -21,7 +21,7 @@
   --charcoal-3: #1c201d;
   --deep: #080a09;
   --white: #f4f6f4;
-  --electric: #35f07f;        /* UI accent (Astrofield's charcoal-and-electric-green pairing) */
+  --electric: #35f07f;        /* UI accent (a charcoal-and-electric-green pairing) */
   --electric-hi: #5af79a;
   --electric-ink: #04210f;    /* text on an electric-green fill */
   --paper: #f1f3f0;
@@ -411,7 +411,7 @@ html[data-nature="2"] .panel { border-top-color: transparent; }
 h1 em, h2 em { font-style: normal; color: var(--accent-text); }   /* no italics: emphasis is the electric green */
 .about p { color: var(--text-2); font-size: clamp(17px, 1.5vw, 20px); line-height: 1.5; margin: 0 0 20px; max-width: 46ch; }
 .about p strong { color: var(--text); font-weight: 600; }
-.about-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: clamp(48px, 8vw, 96px); border-top: 1px solid var(--line); }
+.about-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin-top: clamp(48px, 8vw, 96px); border-top: 1px solid var(--line); }
 .about-facts div { padding: 26px 22px 0 0; }
 .about-facts dt { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
 .about-facts dd { margin: 0; font-size: 19px; letter-spacing: -.015em; }

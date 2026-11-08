@@ -28,4 +28,4 @@ Needs Node 20 or newer. Project notes for developers (architecture, prices and c
 - Placeholders written as `[EDIT: ...]` are for the owner to fill in (About, Shipping and returns, Privacy).
 - Optional generated atmosphere media (stills, a hero video, a social-image plate) can be dropped into `assets/media/`; see `docs/higgsfield-brief.md`. The site is finished without them.
 
-Made by Astrofield Corporation. The wordmark font Sacramento is licensed under the SIL Open Font License (`tools/logo/OFL-Sacramento.txt`).
+The wordmark font Sacramento is licensed under the SIL Open Font License (`tools/logo/OFL-Sacramento.txt`).
