@@ -34,7 +34,7 @@ export const PAGES = {
     route: '/models', ...M['/models'], html: modelsHtml, timeline: modelsTL,
     portrait: { pair: { sy: -0.05, k: 1, over: { cx: -150, px: 150 } }, cut: { sy: -0.12, k: 1.25 }, cutout: { sy: -0.13, k: 1.42 }, magsafe: { sy: -0.13, k: 1.42 } },
   },
-  '/design': { route: '/design', ...M['/design'], html: designHtml, timeline: designTL, portrait: { design: { sy: -0.12, k: 1.62, over: { cx: -17 } } } },
+  '/design': { route: '/design', ...M['/design'], html: designHtml, timeline: designTL, portrait: { design: { sy: -0.12, k: 1.74, over: { cx: -11 } } } },
   '/colors': { route: '/colors', ...M['/colors'], html: colorsHtml, timeline: colorsTL, portrait: { colors: { sy: -0.04, k: 1.3 } } },
   '/customize': { route: '/customize', ...M['/customize'], html: customizeHtml, timeline: customizeTL, portrait: { studio: { sy: -0.26, k: 1.78 } } },
   '/about': { route: '/about', ...M['/about'], html: aboutHtml, timeline: aboutTL, portrait: { about: PORTRAIT_DEFAULT } },

@@ -254,7 +254,7 @@ function buildScene() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 0.94;
+  renderer.toneMappingExposure = 0.77;
   renderer.shadowMap.enabled = true;
 
   // a dark studio: a warm-white key from the upper left, a green-tinted rim from behind right and a cool rim from behind left (they outline the ribs and carry the glints), a low hemisphere fill
@@ -892,7 +892,7 @@ let countKey = '', railKey = '';
 function updateStageChrome(pos, sg) {
   if (sg) {   // a hold or a glide between chapters shows the nearest beat before it (or the first one after it)
     let name = sg.name; if (name === 'hold' || sg.link) { const at = tl.segs.indexOf(sg); name = ''; for (let j = at; j >= 0 && !name; j--) if (tl.segs[j].name !== 'hold' && !tl.segs[j].link) name = tl.segs[j].name; for (let j = at; j < tl.segs.length && !name; j++) if (tl.segs[j].name !== 'hold' && !tl.segs[j].link) name = tl.segs[j].name; }
-    const n = tl.names.length, i = tl.names.indexOf(name) + 1, k = i + '/' + n; if (k !== countKey) { countKey = k; const pad = (v) => String(v).padStart(2, '0'); stageCount.innerHTML = `<b>${pad(i)}</b> / ${pad(n)}`; } }
+    const n = tl.names.length, i = tl.names.indexOf(name) + 1, k = i + '/' + n; if (k !== countKey) { countKey = k; const pad = (v) => String(v).padStart(2, '0'); stageCount.innerHTML = `<b>${pad(i)}</b> / ${pad(n)}`; stageCount.hidden = n < 2; } }   // a page with a single beat has nothing to count
   const P = Math.min(1, Math.max(0, pos / layout.D)).toFixed(3); if (P !== railKey) { railKey = P; railEl.style.setProperty('--p', P); }
 }
 const grabDim = (g) => ({ g, l: $('.l', g), t1: $('.t1', g), t2: $('.t2', g), ld: $('.ld', g), tx: $('text', g), last: -1 });
