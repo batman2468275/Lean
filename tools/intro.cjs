@@ -2,7 +2,7 @@
 //   node tools/intro.cjs <outDir> [width=1440] [height=900]
 const { launch, withSite } = require('./launch.cjs');
 const OUT = process.argv[2] || '.', W = +process.argv[3] || 1440, H = +process.argv[4] || 900;
-const TIMES = [0.15, 0.6, 1.1, 1.6, 2.0, 2.5, 3.0, 3.5];
+const TIMES = [0.15, 0.6, 1.0, 1.4, 1.9, 2.4, 2.9, 3.25];
 (async () => { await withSite(async (base) => {
   const b = await launch(); const ctx = await b.newContext({ viewport: { width: W, height: H }, isMobile: W < 700, hasTouch: W < 700 }); const page = await ctx.newPage();
   await page.addInitScript(() => { window.__NOSMOOTH = true; window.__INTRO_FREEZE = 0; });

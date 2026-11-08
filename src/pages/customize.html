@@ -3,7 +3,8 @@
       <div class="cz-stage" id="cz-stage" role="group" aria-label="Drag to rotate the stand">
         <div class="cz-hint">Drag to rotate</div>
       </div>
-      <div class="panel-card" id="cz-panel" data-t="model">
+      <div class="panel-card" id="cz-panel" data-t="model" data-open="true">
+        <button type="button" class="cz-handle" id="cz-handle" aria-expanded="true" aria-controls="cz-scroll"><i aria-hidden="true"></i><span id="cz-handle-t">Hide options</span></button>
         <h1 class="t">Make it yours.</h1>
         <p class="sub">Pick a model and a color. Add the Lean logo or a line of text to the front or the back.</p>
         <div class="seg cz-tabs" id="cz-tabs" role="group" aria-label="Section">
@@ -12,6 +13,7 @@
           <button type="button" data-t="logo" aria-pressed="false">Logo</button>
         </div>
 
+        <div class="cz-scroll" id="cz-scroll">
         <div class="grp" data-tab="model">
           <div class="grp-h"><span>Model</span><b id="cz-vname"></b></div>
           <div class="seg two" id="cz-variant" role="radiogroup" aria-label="Model"></div>
@@ -53,6 +55,8 @@
           </div>
           <label class="sr" for="in-size">Logo size</label>
           <input class="range" id="in-size" type="range" min="25" max="100" value="85">
+        </div>
+
         </div>
 
         <div class="cz-foot">

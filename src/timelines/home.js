@@ -4,7 +4,7 @@ export default { chapters: {
     start: { rotY: 0.62, sy: 0.2, dist: 400, elev: 9, idle: 1 },
     beats: [
       { name: 'hello', from: 0, to: 0.34, pose: { rotY: 0.3, sy: 0.2, dist: 400, elev: 10 } },                        // headline and buttons on screen, the stand drifting
-      { name: 'turn', from: 0.34, to: 1, pose: { rotY: -0.42, sy: 0.03, dist: 300, elev: 12, idle: 0 } },               // a slow turn to show the profile
+      { name: 'turn', from: 0.34, to: 1, pose: { rotY: -0.42, sy: -0.09, dist: 330, elev: 12, idle: 0 } },               // a slow turn to show the profile
     ],
   },
 } };

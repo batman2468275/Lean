@@ -860,6 +860,10 @@ function bindPage() {
   $$('#cz-tabs button').forEach((b) => b.addEventListener('click', () => {
     $('#cz-panel').dataset.t = b.dataset.t; $$('#cz-tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
   }));
+  $('#cz-handle').addEventListener('click', () => {   // phone: collapse the card to its price bar (and back) so the stand can be looked at
+    const card = $('#cz-panel'), open = card.dataset.open === 'false';
+    card.dataset.open = String(open); $('#cz-handle').setAttribute('aria-expanded', String(open)); $('#cz-handle-t').textContent = open ? 'Hide options' : 'Show options';
+  });
   $('#cz-magsafe').addEventListener('click', () => setMagsafe(!S.magsafe));
   $$('#cz-phone button').forEach((b) => b.addEventListener('click', () => setPhone(b.dataset.phone)));
   $('#q-m').addEventListener('click', () => { S.qty = Math.max(1, S.qty - 1); refreshUI(); });
@@ -952,7 +956,7 @@ function placePlug(cb) {
 }
 
 /* ---------- the Home intro: the wordmark writes itself, the "n" is drawn, then the stand rises and settles (time based, plays once per visit) ---------- */
-const intro = { on: false, t: 0, played: false };
+const intro = { on: false, t: 0, t0: 0, played: false, capTimer: 0 };
 let wm = null;
 function setupWordmark() {
   wm = null;
@@ -981,19 +985,34 @@ function finishWordmark(glow) {
   if (glow) { wm.svg.classList.add('n-glow'); setTimeout(() => wm && wm.svg.classList.remove('n-glow'), 1800); }
   wm = null; document.documentElement.classList.remove('intro-play');
 }
+/* The intro runs on WALL-CLOCK time (not frame counts), so a slow renderer skips frames instead of running slowly; a hard cap and a failsafe timer guarantee it
+   ends in the complete state (full wordmark, stand standing) within INTRO.cap seconds even at 1 to 2 fps; any click, key press, wheel or scroll skips to the end. */
+const INTRO = { write: 1.2, nAt: 1.05, nDur: 0.75, riseAt: 1.2, riseDur: 1.6, settleDur: 1.8, end: 3.3, cap: 3.5 };
+const introSkipEvents = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+function endIntro() {
+  if (!intro.on) return;
+  intro.on = false; clearTimeout(intro.capTimer);
+  introSkipEvents.forEach((ev) => window.removeEventListener(ev, endIntro)); window.removeEventListener('scroll', introScroll);
+  finishWordmark(true); invalidate();
+}
+function introScroll() { if (window.scrollY > 8) endIntro(); }
 function startIntro(def) {
-  intro.on = false; wm = null;
+  intro.on = false; wm = null; clearTimeout(intro.capTimer);
   if (def.route !== '/' || intro.played) return;
   intro.played = true;
   if (reduce || FREEZE != null) return;
-  intro.on = true; intro.t = 0; document.documentElement.classList.add('intro-play'); setupWordmark();
+  intro.on = true; intro.t = 0; intro.t0 = performance.now(); document.documentElement.classList.add('intro-play'); setupWordmark();
+  if (window.__INTRO_FREEZE == null) {   // (the test hook pins the intro at a time: no cap, no skipping)
+    intro.capTimer = setTimeout(endIntro, INTRO.cap * 1000);   // timers still fire between slow frames, and right after a long scene build
+    introSkipEvents.forEach((ev) => window.addEventListener(ev, endIntro, { passive: true })); window.addEventListener('scroll', introScroll, { passive: true });
+  }
 }
-function stepIntro(dt) {
+function stepIntro() {
   if (!intro.on) return;
-  const pin = window.__INTRO_FREEZE; if (pin != null) intro.t = pin; else intro.t += dt;   // __INTRO_FREEZE: test hook, pins the Home intro at a time in seconds
+  const pin = window.__INTRO_FREEZE; intro.t = pin != null ? pin : (performance.now() - intro.t0) / 1000;   // __INTRO_FREEZE: test hook, pins the Home intro at a time in seconds
   const t = intro.t;
-  applyWordmark(EASE.sway(clamp(t / 1.5, 0, 1)), EASE.enter(clamp((t - 1.35) / 0.8, 0, 1)));
-  if (t > 3.6 && pin == null) { intro.on = false; finishWordmark(true); }
+  applyWordmark(EASE.sway(clamp(t / INTRO.write, 0, 1)), EASE.enter(clamp((t - INTRO.nAt) / INTRO.nDur, 0, 1)));
+  if (t > INTRO.end && pin == null) endIntro();
 }
 
 /* reduced motion: no scrub. The stand shows each beat's static end pose; when the beat changes the canvas fades out, the pose swaps, it fades back in */
@@ -1032,7 +1051,7 @@ function frame(now) {
   frameN++; perf.frames++;
   if (!layout || !page || !tl) return;
   const t0 = performance.now(), glBefore = perf.glMs;
-  stepIntro(dt);
+  stepIntro();
   const frozen = FREEZE != null;
   const y = frozen ? FREEZE * layout.D : window.scrollY;
   scrollCur += (y - scrollCur) * ((instant || frozen) ? 1 : 1 - Math.exp(-dt * 8));
@@ -1076,8 +1095,8 @@ function frame(now) {
   flip.cur += (flip.target - flip.cur) * (instant ? 1 : 1 - Math.exp(-dt * 5));
   const idle = reduce ? 0 : Math.sin(t * 0.55) * 0.07 * s.idle;
   // Home intro: the stand rises out of the floor (clipped there) and settles into its 3/4 turn with a soft spring
-  const rise = intro.on ? EASE.enter(clamp((intro.t - 1.5) / 1.7, 0, 1)) : 1;
-  const settleRot = intro.on ? (1 - EASE.settle(clamp((intro.t - 1.5) / 2.1, 0, 1))) * -1.1 : 0;
+  const rise = intro.on ? EASE.enter(clamp((intro.t - INTRO.riseAt) / INTRO.riseDur, 0, 1)) : 1;
+  const settleRot = intro.on ? (1 - EASE.settle(clamp((intro.t - INTRO.riseAt) / INTRO.settleDur, 0, 1))) * -1.1 : 0;
   const rot = s.rotY + idle + settleRot + (userRot.cur + flip.cur) * wStudio;
   pairUI.shift += (pairUI.target - pairUI.shift) * (instant ? 1 : 1 - Math.exp(-dt * 7));
   const shiftX = pairUI.shift * s.pairw;
