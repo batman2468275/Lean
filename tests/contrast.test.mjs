@@ -8,7 +8,7 @@ const css = fs.readFileSync(new URL('../src/style.css', import.meta.url), 'utf8'
 const block = (sel) => { const i = css.indexOf(sel + ' {'); assert.ok(i >= 0, 'no block ' + sel); return css.slice(css.indexOf('{', i) + 1, css.indexOf('\n}', i)); };
 const vars = (txt) => Object.fromEntries([...txt.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 const ROOT = vars(block(':root'));
-const TONES = { light: { ...ROOT, ...vars(block('[data-tone="light"]')) }, deep: { ...ROOT, ...vars(block('[data-tone="deep"]')) } };
+const TONES = { dark: { ...ROOT, ...vars(block('[data-tone="dark"]')) }, deep: { ...ROOT, ...vars(block('[data-tone="deep"]')) }, paper: { ...ROOT, ...vars(block('[data-tone="paper"]')) } };
 
 function resolve(v, map, depth = 0) {            // follow var(--x) references
   const m = /^var\((--[\w-]+)\)$/.exec(v);
@@ -55,12 +55,22 @@ for (const [tone, map] of Object.entries(TONES)) {
   });
 }
 
-test('Mistletoe is a fill, not text: it must NOT be relied on for small text on ivory (documents why --accent-text exists)', () => {
-  const m = rgba(TONES.light['--mistletoe'], TONES.light), iv = rgba(TONES.light['--ivory'], TONES.light);
-  assert.ok(ratio(m, iv) < 3.2, 'if Mistletoe ever passes on ivory, --accent-text could be simplified');
-  assert.notEqual(TONES.light['--accent-text'], TONES.light['--mistletoe']);
+test('two greens, kept apart: the UI accent is electric green, Mistletoe is the product colour and never a UI colour', () => {
+  for (const tone of ['dark', 'deep', 'paper']) {
+    const t = TONES[tone];
+    assert.equal(resolve(t['--accent'], t).toLowerCase(), '#35f07f', tone + ': the accent is electric green');
+    for (const k of ['--accent', '--accent-hi', '--accent-text', '--n-ink', '--focus']) assert.notEqual(resolve(t[k], t).toLowerCase(), t['--mistletoe'].toLowerCase(), `${tone}: ${k} must not be Mistletoe`);
+  }
 });
-test('every semantic token the deep set uses is also defined for light (no token falls through)', () => {
-  const deep = Object.keys(vars(block('[data-tone="deep"]')));
-  for (const k of deep) assert.ok(TONES.light[k] !== undefined, 'light is missing ' + k);
+test('Mistletoe is a fill, not text: on the paper panel it fails small-text contrast (documents why paper has its own --accent-text)', () => {
+  const m = rgba(TONES.paper['--mistletoe'], TONES.paper), p = rgba(TONES.paper['--paper'], TONES.paper);
+  assert.ok(ratio(m, p) < 3.2, 'if Mistletoe ever passes on paper, --accent-text could be simplified');
+  assert.notEqual(TONES.paper['--accent-text'], TONES.paper['--mistletoe']);
+});
+test('the dark base is charcoal with a green bias, never pure black; the paper panel is the only light tone', () => {
+  assert.equal(resolve(TONES.dark['--bg'], TONES.dark).toLowerCase(), '#0d0f0e');
+  assert.ok(lum(rgba(TONES.paper['--bg'], TONES.paper)) > 0.8 && lum(rgba(TONES.dark['--bg'], TONES.dark)) < 0.02 && lum(rgba(TONES.deep['--bg'], TONES.deep)) < 0.02);
+});
+test('every semantic token the deep and paper sets use is also defined for dark (no token falls through)', () => {
+  for (const set of ['deep', 'paper']) for (const k of Object.keys(vars(block(`[data-tone="${set}"]`)))) assert.ok(TONES.dark[k] !== undefined, `dark is missing ${k} (used by ${set})`);
 });

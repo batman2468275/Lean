@@ -189,7 +189,7 @@ function buildMagnets() {
 const WIPE_SECONDS = 0.95, WIPE_SOFT = 0.22;
 const wipe = { from: new THREE.Color(S.hex), to: new THREE.Color(S.hex), t: 1, toHex: S.hex, fromHex: S.hex };
 const wipeUniforms = [];
-const SHADE = { uRibs: { value: 0 }, uXray: { value: 0 }, uGlowCol: { value: new THREE.Color('#9AD98A') } };   // shared by every stand material: ribs lit (0..7) and the x-ray look
+const SHADE = { uRibs: { value: 0 }, uXray: { value: 0 }, uScan: { value: 0 }, uScanR: { value: new THREE.Vector2(0, 75) }, uGlowCol: { value: new THREE.Color('#35f07f') } };   // shared by every stand material: ribs lit (0..7) and the x-ray look
 const standMats = [];
 function patchWipe(material, { origin, reach, axes, colorB = wipe.to, shade = false }) {
   const u = { uColB: { value: colorB }, uWipe: { value: 0 }, uOrigin: { value: origin }, uReach: { value: reach }, uSoft: { value: WIPE_SOFT } };
@@ -199,7 +199,7 @@ function patchWipe(material, { origin, reach, axes, colorB = wipe.to, shade = fa
     if (shade) Object.assign(sh.uniforms, SHADE);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWp = position;');
     let fs = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWp; uniform vec3 uColB; uniform vec3 uOrigin; uniform float uWipe, uReach, uSoft;' + (shade ? ' uniform float uRibs, uXray; uniform vec3 uGlowCol;' : ''))
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWp; uniform vec3 uColB; uniform vec3 uOrigin; uniform float uWipe, uReach, uSoft;' + (shade ? ' uniform float uRibs, uXray, uScan; uniform vec2 uScanR; uniform vec3 uGlowCol;' : ''))
       .replace('#include <color_fragment>', `#include <color_fragment>
         { float d = distance(${axes === 'xy' ? 'vWp.xy, uOrigin.xy' : 'vWp, uOrigin'}) / uReach;
           float f = uWipe * (1.0 + uSoft);
@@ -209,12 +209,16 @@ function patchWipe(material, { origin, reach, axes, colorB = wipe.to, shade = fa
           float lit = (ri >= 0.0 && ri <= 6.0) ? clamp(uRibs - ri, 0.0, 1.0) : 0.0;   // lit one at a time as uRibs counts up
           totalEmissiveRadiance += uGlowCol * lit * 0.55;
           float fr = 1.0 - abs(dot(normalize(normal), normalize(vViewPosition)));      // x-ray: a soft glowing rim
-          totalEmissiveRadiance += uGlowCol * uXray * (0.15 + 0.85 * pow(fr, 2.2)) * 0.9; }`);
+          totalEmissiveRadiance += uGlowCol * uXray * (0.15 + 0.85 * pow(fr, 2.2)) * 0.9;
+          float yc = mix(uScanR.x, uScanR.y, uScan), bd = vWp.y - yc;                  // a scan line sweeping up the stand while it is x-rayed
+          totalEmissiveRadiance += uGlowCol * uXray * (1.5 * exp(-bd * bd / 1.2) + 0.22 * exp(-bd * bd / 70.0)); }`);
     sh.fragmentShader = fs;
   };
   material.customProgramCacheKey = () => 'wipe' + axes + (shade ? 's' : '');
 }
 const easeWipe = EASE.sway;
+const lumOf = (hex) => { const c = new THREE.Color(hex); return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; };
+let styledFor = '';
 let inkHex = S.hex;   // colour the logo decal ink is chosen for (follows the colour that is showing)
 function commitWipe() {   // the new colour now covers everything: make it the base colour
   wipe.from.copy(wipe.to); wipe.fromHex = wipe.toHex; wipe.t = 1;
@@ -233,28 +237,36 @@ const showingHex = () => (wipe.t < 0.5 ? wipe.fromHex : wipe.toHex);
 const planeFloor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e5), planeNever = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e5);
 const cutKeepPlain = new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e5), cutKeepCut = new THREE.Plane(new THREE.Vector3(-1, 0, 0), -1e5);
 const cutModelPlain = new THREE.Plane(new THREE.Vector3(1, 0, 0), 0), cutModelCut = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
-const GROUND_LIGHT = new THREE.Color('#DCD8C2'), GROUND_DEEP = new THREE.Color('#2C4331');   // oat in daylight chapters, moss in the deep ones
+// The pool of light under the stand (added to the dark stage): the stand colour at about a third strength, or a cool white for a near-black stand so it still has something to stand out against.
+const POOL_COOL = new THREE.Color('#a9bbff'), POOL_NEUTRAL = new THREE.Color('#9db0a4');
+function poolFor(c, out, k) {
+  const l = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b, t = THREE.MathUtils.smoothstep(l, 0.02, 0.14);
+  out.copy(POOL_COOL).multiplyScalar(0.17).lerp(tmpColor.copy(c).multiplyScalar(0.17 * (1 - 0.5 * THREE.MathUtils.smoothstep(l, 0.45, 0.9))), t);   // near-black: cool white pool, light colours: their own colour
+  if (document.documentElement.dataset.nature === '0') out.lerp(tmpColor.copy(POOL_NEUTRAL).multiplyScalar(0.13), 0.5);   // level 0: a neutral pool, not a green one
+  return out.multiplyScalar(k);
+}
 function buildScene() {
   window.__SCENE_BUILDS = (window.__SCENE_BUILDS || 0) + 1;   // test hook: the scene must be built exactly once, however many pages you visit
+  SHADE.uScanR.value.set(META.floor_y, META.floor_y + 76);
   const pm = new THREE.PMREMGenerator(renderer);
   scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.42;
+  scene.environmentIntensity = 0.5;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 0.9;   // daylight is bright: a notch down keeps Arctic White from blowing out against the pale page
+  renderer.toneMappingExposure = 0.94;
   renderer.shadowMap.enabled = true;
 
-  // warm daylight: a warm sun from the upper left, a sky-blue fill from the right, a soft warm rim from behind, sky above / warm ground bounce
-  const key = new THREE.DirectionalLight(0xfff0d2, 2.3);
+  // a dark studio: a warm-white key from the upper left, a green-tinted rim from behind right and a cool rim from behind left (they outline the ribs and carry the glints), a low hemisphere fill
+  const key = new THREE.DirectionalLight(0xfff3e2, 2.1);
   key.position.set(-150, 270, 230); key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   Object.assign(key.shadow.camera, { left: -170, right: 170, top: 170, bottom: -170, near: 20, far: 800 });
-  key.shadow.bias = -0.0004; key.shadow.normalBias = 0.5; key.shadow.radius = 7;
+  key.shadow.bias = -0.0004; key.shadow.normalBias = 0.5; key.shadow.radius = 5;
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0x9fd2f4, 1.1); fill.position.set(250, 110, 150); scene.add(fill);
-  const back = new THREE.DirectionalLight(0xfff4de, 1.3); back.position.set(120, 150, -260); scene.add(back);
-  scene.add(new THREE.HemisphereLight(0xd6ebf8, 0xe0d2b0, 0.6));
+  const rim = new THREE.DirectionalLight(0xcfffe2, 2.4); rim.position.set(210, 130, -250); scene.add(rim);
+  const rim2 = new THREE.DirectionalLight(0xbfd6ff, 1.5); rim2.position.set(-250, 90, -150); scene.add(rim2);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x1a221d, 0.3));
 
   // stand
   const loadGeo = (buf) => {
@@ -288,14 +300,14 @@ function buildScene() {
     stops.forEach(([o, a]) => r.addColorStop(o, `rgba(255,255,255,${a})`)); g.fillStyle = r; g.fillRect(0, 0, 256, 256);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   };
-  floor = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.ShadowMaterial({ opacity: 0.3, color: 0x1d2c21 }));
+  floor = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.ShadowMaterial({ opacity: 0.6, color: 0x000000 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; floor.renderOrder = 0; scene.add(floor);
-  groundTo = new THREE.Color(GROUND_LIGHT);
-  const groundMat = new THREE.MeshBasicMaterial({ map: radial([[0, 1], [0.5, 0.92], [0.78, 0.4], [1, 0]]), color: GROUND_LIGHT, transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false });
+  groundTo = new THREE.Color('#223028');
+  const groundMat = new THREE.MeshBasicMaterial({ map: radial([[0, 1], [0.45, 0.6], [0.78, 0.18], [1, 0]]), color: '#223028', transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
   patchWipe(groundMat, { origin: new THREE.Vector3(0, 0, 0), reach: 150, axes: 'xy', colorB: groundTo });   // the ground tint follows the colour wipe, radiating from under the stand
   ground = new THREE.Mesh(new THREE.PlaneGeometry(470, 470), groundMat);
   ground.rotation.x = -Math.PI / 2; ground.renderOrder = -2; scene.add(ground);
-  contact = new THREE.Mesh(new THREE.PlaneGeometry(150, 130), new THREE.MeshBasicMaterial({ map: radial([[0, 0.9], [0.55, 0.45], [1, 0]]), color: 0x14201a, transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false }));
+  contact = new THREE.Mesh(new THREE.PlaneGeometry(150, 130), new THREE.MeshBasicMaterial({ map: radial([[0, 0.9], [0.55, 0.45], [1, 0]]), color: 0x000000, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false }));
   contact.rotation.x = -Math.PI / 2; contact.renderOrder = -1; scene.add(contact);
   contact2 = contact.clone(); contact2.visible = false; scene.add(contact2);   // the same soft shadow under the second stand
 
@@ -434,6 +446,8 @@ let dirty = true;                              // something outside the pose cha
 function invalidate() { dirty = true; }
 const qs = new URLSearchParams(location.search);
 let FREEZE = qs.has('p') ? Math.min(1, Math.max(0, parseFloat(qs.get('p')) || 0)) : null;   // ?p=0.42 pins the page at that progress (exact screenshots)
+// temporary nature dial (?nature=0|1|2): 0 pure tech, 1 a little nature (the default), 2 level 1 plus thin vines, leaf glyphs and filled waves. It is remembered for the visit. Remove once the owner has picked a level.
+{ let n = qs.get('nature'); if (n == null) { try { n = sessionStorage.getItem('lean-nature'); } catch (e) { /* ignore */ } } if (!['0', '1', '2'].includes(n)) n = '1'; try { sessionStorage.setItem('lean-nature', n); } catch (e) { /* ignore */ } document.documentElement.dataset.nature = n; }
 const DEBUG = qs.has('debug');                                                              // ?debug shows page, progress, beat and FPS
 if (FREEZE != null) document.documentElement.classList.add('frozen');
 
@@ -456,8 +470,8 @@ function updateTone(y) {
   const inStory = layout.toneKf.length > 0 && y < layout.storyEnd - layout.vh * 0.2;
   toneStory = inStory ? toneAt(y) : 0;
   let name;
-  if (inStory) name = toneStory > 0.5 ? 'deep' : 'light';
-  else { name = 'light'; const line = y + 70; for (const p of layout.panels) if (line >= p.top) name = p.tone; }
+  if (inStory) name = toneStory > 0.5 ? 'deep' : 'dark';
+  else { name = 'dark'; const line = y + 70; for (const p of layout.panels) if (line >= p.top) name = p.tone; }
   if (name !== toneName) { toneName = name; document.documentElement.dataset.tone = name; nav.dataset.tone = name; }
   const o = (inStory ? toneStory : 0).toFixed(3);
   if (o !== updateTone.last) { updateTone.last = o; $('#u-deep').style.opacity = o; }
@@ -477,7 +491,7 @@ function measure() {
   tl = compile(page.timeline, chapters, portrait ? (ch) => (page.portrait && page.portrait[ch]) || PORTRAIT_FALLBACK : null);
   const order = Object.values(chapters).sort((a, b) => a.top - b.top), toneKf = [];
   for (const c of order) { const v = c.el.dataset.tone === 'deep' ? 1 : 0; toneKf.push({ pos: c.top, v }, { pos: c.top + c.L, v }); }
-  const panels = $$('.panel').map((el) => ({ top: el.getBoundingClientRect().top + y, tone: el.dataset.tone || 'light' }));
+  const panels = $$('.panel').map((el) => ({ top: el.getBoundingClientRect().top + y, tone: el.dataset.tone || 'dark' }));
   const foot = document.getElementById('foot'); panels.push({ top: foot.getBoundingClientRect().top + y, tone: 'deep' });
   const storyEnd = order.length ? Math.max(...order.map((c) => c.top + c.h)) : 0;
   layout = { vh, portrait, chapters, storyEnd, studioTop: chapters.studio ? chapters.studio.top : 0, toneKf, panels, D: Math.max(1, storyEnd - vh) };
@@ -797,19 +811,15 @@ function bindPair() {
   setPair(pairUI.index);
 }
 
-/* ---------- very slow drifting pollen and leaves (CSS animation only; none under reduced motion) ---------- */
-(function drift() {
+/* ---------- spores: at most 24 tiny electric-green dots drifting slowly upward (CSS animation only; shown on Home at nature level 1 and 2; none under reduced motion) ---------- */
+(function spores() {
   const host = $('#drift'); if (!host || reduce) return;
-  const leaf = (fill) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 14'><path d='M0 7C6-2 18-2 24 7C18 16 6 16 0 7Z' fill='${fill}'/><path d='M1.5 7H22.5' stroke='rgba(255,255,255,.5)' stroke-width='.8'/></svg>`)}")`;
-  const shapes = [leaf('#6E9A5C'), leaf('#8FB36F'), leaf('#C9A27A')];
-  const pollen = 'radial-gradient(circle, #F1D58A 0%, rgba(241,213,138,.0) 72%)';
-  const n = innerWidth < 700 ? 7 : 14, rnd = (a, b) => a + Math.random() * (b - a);
+  const n = innerWidth < 700 ? 12 : 24, rnd = (a, b) => a + Math.random() * (b - a);
   for (let i = 0; i < n; i++) {
-    const p = document.createElement('i'), isLeaf = i % 3 === 0, d = rnd(60, 120);
-    p.style.setProperty('--x', rnd(2, 96).toFixed(1) + 'vw'); p.style.setProperty('--dx', rnd(-14, 14).toFixed(1) + 'vw');
-    p.style.setProperty('--s', (isLeaf ? rnd(15, 23) : rnd(5, 10)).toFixed(1) + 'px'); p.style.setProperty('--o', (isLeaf ? rnd(.3, .5) : rnd(.5, .85)).toFixed(2));
-    p.style.setProperty('--d', d.toFixed(0) + 's'); p.style.setProperty('--delay', (-rnd(0, d)).toFixed(1) + 's'); p.style.setProperty('--r', rnd(-200, 200).toFixed(0) + 'deg');
-    p.style.setProperty('--shape', isLeaf ? shapes[i % shapes.length] : pollen);
+    const p = document.createElement('i'), d = rnd(46, 90);
+    p.style.setProperty('--x', rnd(2, 98).toFixed(1) + 'vw'); p.style.setProperty('--dx', rnd(-5, 5).toFixed(1) + 'vw');
+    p.style.setProperty('--s', rnd(2, 3).toFixed(1) + 'px'); p.style.setProperty('--o', rnd(.18, .28).toFixed(2));   // about 25 percent
+    p.style.setProperty('--d', d.toFixed(0) + 's'); p.style.setProperty('--delay', (-rnd(0, d)).toFixed(1) + 's');
     host.appendChild(p);
   }
 })();
@@ -872,7 +882,13 @@ function bindPage() {
 let W = 1, H = 1, scrollCur = 0, lastT = performance.now(), glowKey = '', frameN = 0;
 const tmp = new THREE.Vector3(); let PX = 0, PY = 0;
 function projTo(x, y, z) { tmp.set(x, y, z); pivot.localToWorld(tmp); tmp.project(camera); PX = (tmp.x * 0.5 + 0.5) * W; PY = (-tmp.y * 0.5 + 0.5) * H; }
-const overlay = $('#overlay'), coSlot = $('#co-slot'), arcLbl = $('#arc-lbl');
+const overlay = $('#overlay'), coSlot = $('#co-slot'), arcLbl = $('#arc-lbl'), stageCount = $('#stage-count'), railEl = $('#rail');
+let countKey = '', railKey = '';
+/* spec-sheet counter ("03 / 13": which beat of the page's story is playing) and the progress rail, both read from the same timeline */
+function updateStageChrome(pos, sg) {
+  if (sg && sg.name !== 'hold' && !sg.link) { const n = tl.names.length, i = tl.names.indexOf(sg.name) + 1, k = i + '/' + n; if (k !== countKey) { countKey = k; const pad = (v) => String(v).padStart(2, '0'); stageCount.innerHTML = `<b>${pad(i)}</b> / ${pad(n)}`; } }
+  const P = Math.min(1, Math.max(0, pos / layout.D)).toFixed(3); if (P !== railKey) { railKey = P; railEl.style.setProperty('--p', P); }
+}
 const grabDim = (g) => ({ g, l: $('.l', g), t1: $('.t1', g), t2: $('.t2', g), ld: $('.ld', g), tx: $('text', g), last: -1 });
 const dimA = grabDim($('#dimH')), dimB = grabDim($('#dimD'));
 const hv = META.half_height;
@@ -1022,6 +1038,7 @@ function frame(now) {
   updateDom(pos, y);
   const sg = tl.seg(pos);
   updateHud(now, pos, sg);
+  updateStageChrome(pos, sg);
   if (!renderer || page.stage === false || !tl.segs.length || y > layout.storyEnd + 4) { overlay.classList.remove('live'); return; }
 
   tl.sample(pos, pose);
@@ -1039,9 +1056,10 @@ function frame(now) {
   }
   const shown = showingHex();
   if (shown !== inkHex) { inkHex = shown; redrawInk(); }   // logo ink flips for the colour that is showing
-  if (shown !== glowKey) {   // the page glow behind the stand follows the colour (crossfades via @property --glow); very light colours glow moss so they stay visible on ivory
+  if (shown !== styledFor) { styledFor = shown; const dk = THREE.MathUtils.smoothstep(1 - lumOf(shown), 0.86, 0.98); for (let i = 0; i < standMats.length; i++) { const m = standMats[i]; m.clearcoat = 0.28 + 0.5 * dk; m.clearcoatRoughness = 0.5 - 0.3 * dk; m.envMapIntensity = 1 + 0.9 * dk; } }   // near-black stands get a glossier coat and more reflection so they read on the dark stage
+  if (shown !== glowKey) {   // the page glow behind the stand follows the colour (crossfades via @property --glow); very light colours glow white, near-black a cool blue-white so the stand reads
     glowKey = shown; const hx = parseInt(shown.slice(1), 16), c = tmpColor.set(shown), lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-    document.documentElement.style.setProperty('--glow', lum > 0.55 ? 'rgba(47,74,54,.2)' : `rgba(${hx >> 16 & 255},${hx >> 8 & 255},${hx & 255},${lum < 0.06 ? 0.14 : 0.26})`);
+    document.documentElement.style.setProperty('--glow', lum > 0.55 ? 'rgba(255,255,255,.15)' : lum < 0.06 ? 'rgba(170,190,255,.2)' : `rgba(${hx >> 16 & 255},${hx >> 8 & 255},${hx & 255},.2)`);
   }
 
   // which geometry the main stand shows: the timeline's `cut` (0 Regular, 1 With cutout), or on Customize the selected model, swapped by a sweep so it never pops
@@ -1076,12 +1094,11 @@ function frame(now) {
   floor.position.y = fl - 0.05; ground.position.y = fl + 0.15; contact.position.y = fl + 0.3; contact2.position.y = fl + 0.3;
   ground.scale.setScalar(s.scale * (1 + 0.55 * s.pairw)); contact.scale.setScalar(s.scale); contact2.scale.setScalar(s.scale);
   contact.position.x = pivot.position.x; contact2.position.x = pivotB.position.x; contact2.visible = pivotB.visible;
-  tmpColor.copy(GROUND_LIGHT).lerp(GROUND_DEEP, toneStory);   // the ground: oat or moss, with a touch of the stand colour that wipes with it
-  ground.material.color.copy(tmpColor).lerp(wipe.from, 0.2); groundTo.copy(tmpColor).lerp(wipe.to, 0.2);
+  { const k = 1 - 0.3 * toneStory; poolFor(wipe.from, ground.material.color, k); poolFor(wipe.to, groundTo, k); }   // the pool follows the colour wipe, a little dimmer in the deep chapters
   if (logoDecal) { logoDecal.visible = s.logo > 0.02; logoDecal.material.opacity = s.logo; }
   if (magGroup) magGroup.visible = S.magsafe || s.mag > 0.5;
   // ribs lighting up one at a time, and the x-ray look
-  SHADE.uRibs.value = s.ribs; SHADE.uXray.value = s.xray;
+  SHADE.uRibs.value = s.ribs; SHADE.uXray.value = s.xray; SHADE.uScan.value = (t * 0.32) % 1;
   const xr = s.xray > 0.01;
   for (let i = 0; i < standMats.length; i++) { const m = standMats[i]; if (m.transparent !== xr) m.transparent = xr; m.opacity = 1 - 0.62 * s.xray; m.depthWrite = s.xray < 0.5; }
   slotGlow.visible = s.glow > 0.01; slotGlow.material.opacity = s.glow * (0.55 + 0.45 * Math.sin(t * 3.2));
@@ -1112,7 +1129,7 @@ function frame(now) {
   // Is there anything new to draw? (Static scroll positions, finished wipes and idle pages cost no GPU time; a gently swaying stand is drawn at 30 fps.)
   let moved = dirty;
   for (let i = 0; i < KEYS.length; i++) { const k = KEYS[i]; if (Math.abs(s[k] - drawn[k]) > 1e-4) { moved = true; drawn[k] = s[k]; } }
-  const busy = wipe.t < 1 || intro.on || trans.t < 1 || cutting || Math.abs(userRot.cur - userRot.target) > 1e-4 || Math.abs(flip.cur - flip.target) > 1e-3 || Math.abs(pairUI.shift - pairUI.target) > 0.05 || Math.abs(cutShown - cutTarget) > 1e-3 || s.glow > 0.01 || snapBusy(s.snap);
+  const busy = wipe.t < 1 || s.xray > 0.01 || intro.on || trans.t < 1 || cutting || Math.abs(userRot.cur - userRot.target) > 1e-4 || Math.abs(flip.cur - flip.target) > 1e-3 || Math.abs(pairUI.shift - pairUI.target) > 0.05 || Math.abs(cutShown - cutTarget) > 1e-3 || s.glow > 0.01 || snapBusy(s.snap);
   const swaying = s.idle > 0.001 && !reduce;
   const toneMoved = Math.abs(toneStory - drawnTone) > 0.002; if (toneMoved) drawnTone = toneStory;
   if (moved || busy || toneMoved || (swaying && (frameN & 1) === 0)) {
@@ -1147,7 +1164,7 @@ async function mount(def, hash, animate) {
   page = def;
   view.innerHTML = def.html.replace(/%%LOGO:(\d+(?:\.\d+)?)%%/g, (_, e) => logoSvg(+e));
   document.title = def.title; if (metaDesc) metaDesc.content = def.description || '';
-  document.documentElement.dataset.stage = def.stage === false ? 'off' : 'on';
+  document.documentElement.dataset.stage = def.stage === false ? 'off' : 'on'; document.documentElement.dataset.page = def.route;
   $$('#tabs a').forEach((a) => { const on = a.dataset.route === def.route; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   setMenu(false);
   hashLinks(view);

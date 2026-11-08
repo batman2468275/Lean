@@ -27,12 +27,12 @@ const logoSvg = (extra) => {
 // standalone logo files for favicon / social images / print (regenerated on every build)
 fs.mkdirSync('assets/logo', { recursive: true });
 const logoFile = (extra, text, n) => logoSvg(extra).replace('<svg class="logo"', '<svg xmlns="http://www.w3.org/2000/svg"').replace('class="lg-t"', `fill="${text}" stroke="${text}" stroke-linejoin="round" stroke-linecap="round"`).replace('class="lg-n"', `fill="none" stroke="${n}" stroke-linecap="round" stroke-linejoin="round"`);
-// brand colours for the standalone files (the page itself uses the tokens in src/style.css): letters ivory / ink, the "n" in the deep-forest-safe and ivory-safe greens
-fs.writeFileSync('assets/logo/lean-logo-on-dark.svg', logoFile(1.5, '#F5F2E9', '#8FBE7C'));
-fs.writeFileSync('assets/logo/lean-logo-on-light.svg', logoFile(1.5, '#1A241D', '#4F7F3E'));
+// brand colours for the standalone files (the page itself uses the tokens in src/style.css): letters white / ink, the "n" in electric green (#35F07F on dark, #0B8A43 on light)
+fs.writeFileSync('assets/logo/lean-logo-on-dark.svg', logoFile(1.5, '#F4F6F4', '#35F07F'));
+fs.writeFileSync('assets/logo/lean-logo-on-light.svg', logoFile(1.5, '#131513', '#0B8A43'));
 fs.writeFileSync('assets/logo/lean-logo-black.svg', logoFile(1.5, '#000000', '#000000'));
-// favicon: the "n" (the stand's own profile) in light green on a deep-forest rounded square
-const favicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="#16231B"/><svg x="11" y="11" width="42" height="42" viewBox="444 -4 74 82"><path d="${LOGO.n}" fill="none" stroke="#8FBE7C" stroke-width="${LOGO.stroke + 2}" stroke-linecap="round" stroke-linejoin="round"/></svg></svg>`;
+// favicon: the "n" (the stand's own profile) in electric green on a charcoal rounded square
+const favicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="#0d0f0e"/><svg x="11" y="11" width="42" height="42" viewBox="444 -4 74 82"><path d="${LOGO.n}" fill="none" stroke="#35f07f" stroke-width="${LOGO.stroke + 2}" stroke-linecap="round" stroke-linejoin="round"/></svg></svg>`;
 fs.writeFileSync('assets/logo/favicon.svg', favicon);
 
 /* ---------- clean dist, copy the files the site serves ---------- */
@@ -68,15 +68,16 @@ const page = (title, description, noindex = false) => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
-<meta name="theme-color" content="#F5F2E9">${noindex ? '\n<meta name="robots" content="noindex, nofollow">' : ''}
+<meta name="theme-color" content="#0d0f0e"><meta name="color-scheme" content="dark">${noindex ? '\n<meta name="robots" content="noindex, nofollow">' : ''}
 <link rel="icon" type="image/svg+xml" href="${BASE}assets/logo/favicon.svg">
 <link rel="apple-touch-icon" href="${BASE}assets/logo/apple-touch-icon.png">
 <meta property="og:type" content="website"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="${BASE}assets/social/og-image.png"><meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"></noscript>
 <link rel="stylesheet" href="${BASE}assets/style.css">
 <style>[hidden]{display:none!important}</style>
+<script>(function(){var n=new URLSearchParams(location.search).get("nature");try{if(n==null)n=sessionStorage.getItem("lean-nature")}catch(e){}if(n!=="0"&&n!=="1"&&n!=="2")n="1";document.documentElement.dataset.nature=n}())</script>
 <script>window.__BASE__=${JSON.stringify(BASE)};window.__META__=${JSON.stringify(meta)};window.__IMG__=${JSON.stringify(IMG)};</script>
 </head><body>
 ${shell}

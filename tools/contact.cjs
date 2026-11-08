@@ -11,6 +11,7 @@ const PS = [0.02, 0.12, 0.22, 0.32, 0.42, 0.52, 0.62, 0.72, 0.84, 0.96];
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1, isMobile: W < 700, hasTouch: W < 700 });
     const page = await ctx.newPage();
     await page.addInitScript(() => { window.__NOSMOOTH = true; });
+    if (process.env.NATURE) await page.addInitScript((n) => { try { sessionStorage.setItem('lean-nature', n); } catch (e) { /* ignore */ } }, process.env.NATURE);   // NATURE=0|1|2 picks the nature level for the run
     await page.route((u) => !u.href.startsWith('http://127.0.0.1'), (r) => r.abort());
     page.on('console', (m) => { if (m.type() === 'error' && !/ERR_FAILED/.test(m.text())) console.log('console error', m.text().slice(0, 300)); });
     page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
