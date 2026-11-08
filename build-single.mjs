@@ -23,6 +23,12 @@ const MEDIA = JSON.parse(/window\.__MEDIA__=(\{.*?\});/.exec(html)[1]);
 for (const [slot, url] of Object.entries(MEDIA)) { if (slot === 'heroPlate') { delete MEDIA[slot]; continue; } MEDIA[slot] = dataUrl('dist' + url); }
 html = html.replace(/window\.__MEDIA__=\{.*?\};/, () => `window.__MEDIA__=${JSON.stringify(MEDIA)};`);
 
+// the new product stills: NOT inlined (the one-file demo stays small and a gallery would add megabytes). Only one three-quarter still per model goes in, at 640 px;
+// every other picture token becomes nothing in this build, with no broken-image icon (src/shotimg.js). See docs/images.md.
+const SHOTDATA = {};
+for (const id of ['plain-3q-left', 'cutout-3q-left']) SHOTDATA[id] = dataUrl(`dist/assets/renders/${id}@640.webp`);
+html = html.replace(/window\.__PHOTOS__=\[.*?\];/, () => `window.__PHOTOS__=[];window.__SHOTDATA__=${JSON.stringify(SHOTDATA)};`);
+
 // head: no files to point at
 html = html.replace(/<link rel="icon"[^>]*>/, () => `<link rel="icon" type="image/svg+xml" href="${dataUrl('dist/assets/logo/favicon.svg')}">`);
 html = html.replace(/<link rel="apple-touch-icon"[^>]*>\n?/, '').replace(/<meta property="og:image"[^>]*>/, '').replace(/<meta name="twitter:card"[^>]*>/, '');

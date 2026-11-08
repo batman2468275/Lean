@@ -21,7 +21,8 @@
     "interact:intro": "node tools/intro_test.cjs",
     "test:media": "node tools/media_test.cjs",
     "test:a11y": "node tools/a11y.cjs",
-    "measure:scroll": "node tools/pagelen.cjs"
+    "measure:scroll": "node tools/pagelen.cjs",
+    "render:shots": "node tools/render_shots.cjs"
   },
   "keywords": [],
   "author": "",

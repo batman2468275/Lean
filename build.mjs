@@ -14,6 +14,7 @@ import path from 'node:path';
 import { CONFIG } from './src/config.js';
 import { routeMeta, PAGE_LIST, ADMIN_ROUTE } from './src/routes.js';
 import { SLOTS } from './src/media.js';
+import { SHOTS } from './src/shots.js';
 
 const BASE = process.env.LEAN_BASE || '/';
 const meta = JSON.parse(fs.readFileSync('build/meta.json', 'utf8'));
@@ -48,9 +49,19 @@ fs.copyFileSync('build/model_plain.bin', 'dist/assets/model_plain.bin');
 
 // product renders: <variant>-<view>.webp (white base, tinted in the page) and <variant>-<view>-<look>.webp (a real dark material, e.g. -black, used untinted)
 const IMG = {};
-for (const f of fs.readdirSync('assets/renders').filter((n) => n.endsWith('.webp'))) {
+for (const f of fs.readdirSync('assets/renders').filter((n) => /^(plain|cutout)-(front|side|detail)(-black)?\.webp$/.test(n))) {   // the studio set only; the other pictures are listed in src/shots.js
   const [variant, view, look] = f.slice(0, -5).split('-');
   (IMG[variant] ||= {})[look ? `${view}-${look}` : view] = `${BASE}assets/renders/${f}`;
+}
+
+// real photos: assets/photos/<id>.webp replaces the render with the same id (and drops its "Render" caption). Only ids that exist in src/shots.js count.
+const PHOTOS = [];
+if (fs.existsSync('assets/photos')) {
+  const ids = new Set(SHOTS.map((s) => s.id));
+  for (const f of fs.readdirSync('assets/photos').filter((n) => n.endsWith('.webp'))) {
+    const id = f.slice(0, -5); if (!ids.has(id)) { console.warn(`  photo warning: assets/photos/${f} matches no id in src/shots.js, ignored`); continue; }
+    fs.mkdirSync('dist/assets/photos', { recursive: true }); fs.copyFileSync(`assets/photos/${f}`, `dist/assets/photos/${f}`); PHOTOS.push(id);
+  }
 }
 
 /* ---------- optional atmosphere media (assets/media, see docs/higgsfield-brief.md): only the files that exist are listed and copied ---------- */
@@ -91,7 +102,7 @@ const page = (title, description, noindex = false) => `<!doctype html>
 <link rel="stylesheet" href="${BASE}assets/style.css">
 <style>[hidden]{display:none!important}</style>
 <script>(function(){var n=new URLSearchParams(location.search).get("nature");try{if(n==null)n=sessionStorage.getItem("lean-nature")}catch(e){}if(n!=="0"&&n!=="1"&&n!=="2")n="1";document.documentElement.dataset.nature=n}())</script>
-<script>window.__BASE__=${JSON.stringify(BASE)};window.__META__=${JSON.stringify(meta)};window.__IMG__=${JSON.stringify(IMG)};window.__MEDIA__=${JSON.stringify(MEDIA)};</script>
+<script>window.__BASE__=${JSON.stringify(BASE)};window.__META__=${JSON.stringify(meta)};window.__IMG__=${JSON.stringify(IMG)};window.__MEDIA__=${JSON.stringify(MEDIA)};window.__PHOTOS__=${JSON.stringify(PHOTOS)};</script>
 </head><body>
 ${shell}
 <noscript><p style="position:relative;z-index:5;padding:120px 24px;font:17px system-ui;max-width:560px;margin:auto">Lean is a 3D-printed phone stand${from ? ', ' + from[0].toLowerCase().replace('from', 'from') : ''}. This site needs JavaScript to show the 3D stand.</p></noscript>

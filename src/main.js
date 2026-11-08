@@ -1,10 +1,12 @@
 import { initMedia, syncMedia } from './media.js';
+import { PAD_TOP, phoneSize, roundedRect, magnetGeometries, phoneGeometries, plugGeometry, cableCurve } from './props.js';
 import { bindBoard, bindAdmin } from './suggestions.js';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { toCreasedNormals, mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js';
 import LOGO from './logo.json';
+import { expandShots, figureHtml, bindLazy } from './shotimg.js';
 import { CONFIG } from './config.js';   // names, colours and prices: the only place they are defined
 import * as PR from './pricing.js';     // price and bag maths (unit-tested)
 import { ticket, magsafeLabel } from './order.js';   // fulfilment ticket + print file name (unit-tested)
@@ -19,6 +21,9 @@ const BASE_URL = window.__BASE__ || '/';
 /* Single-file demo (lean-demo.html, build-single.mjs): opened from disk there is no server, so pages live in the URL hash (#/models, #/customize?color=sky#order)
    and the 3D models come inline as base64. Everything else is the same code. */
 const HASHMODE = !!window.__SINGLE__;
+const SHOT_ENV = { base: window.__BASE__ || '/', photos: window.__PHOTOS__ || [], single: HASHMODE, data: window.__SHOTDATA__ || null };   // product pictures: src/shotimg.js
+// a picture that fails to load is removed, never shown as a broken-image icon
+window.addEventListener('error', (e) => { const t = e.target; if (t && t.tagName === 'IMG' && t.closest && t.closest('.pic')) t.closest('.pic').remove(); }, true);
 const appUrl = () => (HASHMODE ? (location.hash.slice(1) || '/') : location.pathname + location.search + location.hash);   // the page the visitor is on
 const appSearch = () => (HASHMODE ? new URL(appUrl(), 'https://demo.invalid').search : location.search);
 const appHash = () => (HASHMODE ? new URL(appUrl(), 'https://demo.invalid').hash : location.hash);
@@ -119,16 +124,7 @@ function drawScreen(pct, charging, blank = false) {
   screenTex.needsUpdate = true;
 }
 
-function roundedRect(w, h, r) {
-  const s = new THREE.Shape(); const x = -w / 2, y = -h / 2;
-  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
-  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
-  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
-  return s;
-}
-
-const PH = { w: 71.5, h: 147, t: META.phone_t };
+const PH = phoneSize(META);   // shared with the product stills: src/props.js
 const portPos = corner.clone().addScaledVector(nOut, 0.9 + PH.t / 2).addScaledVector(sUp, 0.5);
 const phoneRest = corner.clone().addScaledVector(nOut, 0.9 + PH.t / 2).addScaledVector(sUp, 0.5 + PH.h / 2);
 const phoneQuat = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, sUp, nOut));
@@ -159,28 +155,14 @@ function magsafeFront() {
   return { point: corner.clone().addScaledVector(sUp, (a + b) / 2), normal: nOut.clone(), maxW: surf.front.maxW, maxH: (b - a) * 0.82, where: above ? 'above' : 'below' };
 }
 let magGroup = null;
-// Pad top above the rib crest plane. The print file uses 0.02 (tools/magsafe_params.json), but the web mesh still has its ribs (they are only cut in the print file),
-// so the overlay sits 0.45 mm proud: the uncut rib tops stay hidden under the pad and under the magnet instead of poking through.
-const PAD_TOP = 0.45;
 function buildMagnets() {
   if (!renderer || !standMat) return;
   if (magGroup) { pivot.remove(magGroup); magGroup.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
-  const g = MAG.pocket, mg = MAG.magnet;
-  // pad profile (radius, height above the crest plane): flared skirt up to the flat top, chamfered pocket, pocket floor. Same numbers as the print file.
-  const prof = [[6.2, -3.5], [4.4, PAD_TOP], [g.radius + g.chamfer, PAD_TOP], [g.radius, PAD_TOP - g.chamfer], [g.radius, PAD_TOP - g.depth], [0, PAD_TOP - g.depth]].map(([r, y]) => new THREE.Vector2(r, y));
-  const pad0 = toCreasedNormals(new THREE.LatheGeometry(prof, 48), 0.6);
-  const mag0 = new THREE.CylinderGeometry(mg.diameter / 2, mg.diameter / 2, mg.thickness, 40).translate(0, PAD_TOP - g.depth + mg.thickness / 2, 0);
-  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), nOut);
-  const pads = [], mags = [];
-  for (const m of MAG.sizes[S.phone].magnets) {
-    const M = new THREE.Matrix4().compose(V3(m.centre), q, new THREE.Vector3(1, 1, 1));
-    pads.push(pad0.clone().applyMatrix4(M)); mags.push(mag0.clone().applyMatrix4(M));   // baked into model space so the colour wipe lines up with the stand
-  }
+  const { pads, mags } = magnetGeometries(MAG, S.phone, nOut);   // baked into model space so the colour wipe lines up with the stand (src/props.js, shared with the product stills)
   magGroup = new THREE.Group();
-  const padMesh = new THREE.Mesh(mergeGeometries(pads), standMat); padMesh.castShadow = true; padMesh.receiveShadow = true;
-  const magMesh = new THREE.Mesh(mergeGeometries(mags), magMat || (magMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: 1, roughness: 0.46, emissive: 0x9ad98a, emissiveIntensity: 0 }))); magMesh.receiveShadow = true;
+  const padMesh = new THREE.Mesh(pads, standMat); padMesh.castShadow = true; padMesh.receiveShadow = true;
+  const magMesh = new THREE.Mesh(mags, magMat || (magMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: 1, roughness: 0.46, emissive: 0x9ad98a, emissiveIntensity: 0 }))); magMesh.receiveShadow = true;
   magGroup.add(padMesh, magMesh); magGroup.visible = S.magsafe; pivot.add(magGroup);
-  pad0.dispose(); mag0.dispose();
   invalidate();
 }
 
@@ -314,14 +296,9 @@ function buildScene() {
 
   // phone
   phoneRoot = new THREE.Group();
-  const bodyGeo = new THREE.ExtrudeGeometry(roundedRect(PH.w, PH.h, 10), { depth: PH.t - 0.6, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.3, bevelSegments: 2, curveSegments: 14 });
-  bodyGeo.translate(0, 0, -(PH.t - 0.6) / 2);
+  const { body: bodyGeo, screen: scrGeo } = phoneGeometries(PH);
   phoneBody = new THREE.Mesh(bodyGeo, new THREE.MeshPhysicalMaterial({ color: 0x1b1d1f, roughness: 0.35, metalness: 0.75, transparent: true }));
   phoneBody.castShadow = true;
-  const scrGeo = new THREE.ShapeGeometry(roundedRect(PH.w - 3.4, PH.h - 3.4, 8), 12);
-  const sp = scrGeo.attributes.position, su = new Float32Array(sp.count * 2);
-  for (let i = 0; i < sp.count; i++) { su[i * 2] = (sp.getX(i) + (PH.w - 3.4) / 2) / (PH.w - 3.4); su[i * 2 + 1] = (sp.getY(i) + (PH.h - 3.4) / 2) / (PH.h - 3.4); }
-  scrGeo.setAttribute('uv', new THREE.BufferAttribute(su, 2));
   phoneScreen = new THREE.Mesh(scrGeo, new THREE.MeshBasicMaterial({ map: screenTex, transparent: true, toneMapped: false }));
   phoneScreen.position.z = PH.t / 2 + 0.04;
   phoneRoot.add(phoneBody, phoneScreen);
@@ -330,20 +307,13 @@ function buildScene() {
 
   // plug + cable
   plugGroup = new THREE.Group();
-  const plugGeo = new THREE.ExtrudeGeometry(roundedRect(11.6, 5.8, 2.4), { depth: 10, bevelEnabled: false, curveSegments: 10 });
+  const plugGeo = plugGeometry();
   const plug = new THREE.Mesh(plugGeo, new THREE.MeshStandardMaterial({ color: 0xdfe2e4, roughness: 0.5, metalness: 0.1 }));
   plug.castShadow = true; plugGroup.add(plug);
   plugGroup.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, nOut, sDown));
   plugGroup.position.copy(portPos); plugGroup.visible = false; pivot.add(plugGroup);
 
-  const yT = floorY + 1.65;
-  const C = portPos.clone().addScaledVector(sDown, (portPos.y - (yT + 4.5)) / -sDown.y);
-  const pts = [
-    portPos.clone().addScaledVector(sDown, 10), portPos.clone().addScaledVector(sDown, 16), C,
-    new THREE.Vector3(C.x + 0.6, yT, C.z + 6), new THREE.Vector3(C.x + 7, yT, C.z + 20),
-    new THREE.Vector3(C.x + 20, yT, C.z + 36), new THREE.Vector3(C.x + 40, yT, C.z + 52),
-  ].reverse();
-  const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+  const curve = cableCurve(portPos, sDown, floorY);
   const tube = new THREE.TubeGeometry(curve, CABLE_SEG, 1.65, CABLE_RAD, false);
   cableMesh = new THREE.Mesh(tube, new THREE.MeshStandardMaterial({ color: 0xe9ebec, roughness: 0.55 }));
   cableMesh.castShadow = true; cableMesh.frustumCulled = false; pivot.add(cableMesh);
@@ -686,7 +656,20 @@ function fillStatic() {
   });
   chapterSw = $$('#sw-colors .sw');
   $('#color-links').innerHTML = CONFIG.colors.map((c) => `<a class="swatch-card rv" href="/customize?color=${c.id}#order" style="--c:${c.hex}"><i></i><b>${c.name}</b><span>Choose</span></a>`).join('');
+  buildShotGrids();
   buildCompare();
+}
+/* pictures whose captions come from CONFIG (colour and phone-size names): the colour-by-model grid, the MagSafe sizes */
+function buildShotGrids() {
+  const F = (id, mods) => figureHtml(id, mods, SHOT_ENV);
+  const cg = $('#color-grid');
+  if (cg !== SINK) cg.innerHTML = CONFIG.colors.map((c) => {
+    const cells = CONFIG.variants.map((v) => { const f = F(`${v.id}-3q-${c.id}`, ['sm', 'nocap']); return f ? `<div class="cg-cell">${f}<span>${v.name}</span></div>` : ''; }).join('');
+    return cells ? `<a class="cg-col rv" href="/customize?color=${c.id}#order" style="--c:${c.hex}" aria-label="Choose ${c.name}"><b><i></i>${c.name}</b>${cells}</a>` : '';
+  }).join('');
+  const sizes = (mods, cls) => CONFIG.phoneSizes.map((p) => { const f = F('magsafe-' + p.id, mods); return f ? `<div class="${cls}">${f}<p class="plate-k">${p.name} <small>${p.short}</small></p></div>` : ''; }).join('');
+  const s1 = $('#size-shots');
+  if (s1 !== SINK) s1.innerHTML = sizes(['md'], 'plate');
 }
 /* the comparison table on the Models page: every figure from CONFIG */
 function buildCompare() {
@@ -827,6 +810,29 @@ function bindPair() {
 
 /* scroll reveals for opaque panels (rebuilt for every page) */
 let rvObserver = null;
+/* A band of pictures that drifts sideways while you scroll down (Home, "Up close"). The section is tall and its content sticky; vertical progress moves the track.
+   With reduced motion nothing is scrubbed: the track is an ordinary sideways-scrolling strip you can reach with the keyboard or a swipe. */
+let bandOff = null, lazyOff = null;
+function bindBands() {
+  if (bandOff) { bandOff(); bandOff = null; }
+  const bands = $$('.hband'); if (!bands.length) return;
+  if (reduce) { bands.forEach((b) => { b.dataset.native = ''; const t = b.querySelector('.hband-track'); if (t) { t.tabIndex = 0; t.setAttribute('role', 'group'); t.setAttribute('aria-label', 'Pictures, scroll sideways'); } }); return; }
+  let raf = 0;
+  const update = () => {
+    raf = 0;
+    for (const b of bands) {
+      const track = b.querySelector('.hband-track'); if (!track) continue;
+      const span = b.offsetHeight - window.innerHeight, max = Math.max(0, track.scrollWidth - track.clientWidth);
+      const p = span > 0 ? Math.min(1, Math.max(0, -b.getBoundingClientRect().top / span)) : 0;
+      track.style.setProperty('--hx', (-p * max).toFixed(1) + 'px');
+    }
+  };
+  const on = () => { if (!raf) raf = requestAnimationFrame(update); };
+  window.addEventListener('scroll', on, { passive: true }); window.addEventListener('resize', on);
+  bandOff = () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', on); if (raf) cancelAnimationFrame(raf); };
+  update();
+}
+
 function bindReveals() {
   if (rvObserver) rvObserver.disconnect();
   if (!('IntersectionObserver' in window)) return;
@@ -874,7 +880,9 @@ function bindPage() {
     bagUI(); persist();
     say(`Added ${S.qty} × Lean, ${variantOf(S.variant).name.toLowerCase()}${S.magsafe ? ` + MagSafe (${CONFIG.phoneSizes.find((p) => p.id === S.phone).name})` : ''}, ${colorName()}. Bag: ${bagSummary()}. <b>Checkout isn’t connected in this draft.</b>`);
   });
-  bindPair(); bindStage(); bindBlocks(); bindReveals();
+  view.querySelectorAll('[data-shots]').forEach((el) => { if (!el.querySelector('img')) el.remove(); });   // no pictures (the one-file demo): no empty gallery
+  bindPair(); bindStage(); bindBlocks(); bindReveals(); bindBands();
+  if (lazyOff) lazyOff(); lazyOff = bindLazy(view);
   bindBoard(); bindAdmin();   // the Suggestions board and its admin page (no-ops on other pages)
   refreshUI();
 }
@@ -1184,7 +1192,7 @@ async function mount(def, hash, animate) {
   if (animate && !instant && page) { view.classList.add('view-out'); await sleep(240); if (token !== navToken) return; }
   if (lastPose && layout) { trans.from = { ...lastPose }; trans.t = (instant || !page) ? 1 : 0; }   // glide from wherever the stand is now
   page = def;
-  view.innerHTML = def.html.replace(/%%LOGO:(\d+(?:\.\d+)?)%%/g, (_, e) => logoSvg(+e));
+  view.innerHTML = expandShots(def.html.replace(/%%LOGO:(\d+(?:\.\d+)?)%%/g, (_, e) => logoSvg(+e)), SHOT_ENV);
   document.title = def.title; if (metaDesc) metaDesc.content = def.description || '';
   document.documentElement.dataset.stage = def.stage === false ? 'off' : 'on'; document.documentElement.dataset.page = def.route; syncMedia();
   $$('#tabs a').forEach((a) => { const on = a.dataset.route === def.route; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
