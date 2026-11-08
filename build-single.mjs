@@ -9,7 +9,7 @@ import fs from 'node:fs';
 const need = (f) => { if (!fs.existsSync(f)) throw new Error(`${f} is missing: run "npm run build" first`); return f; };
 let html = fs.readFileSync(need('dist/index.html'), 'utf8');
 const b64 = (f) => fs.readFileSync(need(f)).toString('base64');
-const mime = { webp: 'image/webp', svg: 'image/svg+xml', png: 'image/png' };
+const mime = { webp: 'image/webp', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg' };
 const dataUrl = (f) => `data:${mime[f.split('.').pop()]};base64,${b64(f)}`;
 const must = (cond, msg) => { if (!cond) throw new Error('single-file build: ' + msg); };
 
@@ -17,6 +17,11 @@ const must = (cond, msg) => { if (!cond) throw new Error('single-file build: ' +
 const IMG = JSON.parse(/window\.__IMG__=(\{.*?\});/.exec(html)[1]);
 for (const set of Object.values(IMG)) for (const [view, url] of Object.entries(set)) set[view] = dataUrl('dist' + url);
 html = html.replace(/window\.__IMG__=\{.*?\};/, () => `window.__IMG__=${JSON.stringify(IMG)};window.__SINGLE__=true;window.__MODELS__={cut:"${b64('dist/assets/model_cut.bin')}",plain:"${b64('dist/assets/model_plain.bin')}"};`);
+
+// optional atmosphere media: stills go inline as data URLs (they are small); the video is left out of the one-file demo (its poster, if there is one, stays)
+const MEDIA = JSON.parse(/window\.__MEDIA__=(\{.*?\});/.exec(html)[1]);
+for (const [slot, url] of Object.entries(MEDIA)) { if (slot === 'heroPlate') { delete MEDIA[slot]; continue; } MEDIA[slot] = dataUrl('dist' + url); }
+html = html.replace(/window\.__MEDIA__=\{.*?\};/, () => `window.__MEDIA__=${JSON.stringify(MEDIA)};`);
 
 // head: no files to point at
 html = html.replace(/<link rel="icon"[^>]*>/, () => `<link rel="icon" type="image/svg+xml" href="${dataUrl('dist/assets/logo/favicon.svg')}">`);

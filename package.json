@@ -17,7 +17,10 @@
     "test:single": "node tools/single_test.cjs",
     "dev": "npm run build && node tools/serve.cjs",
     "interact:nav": "node tools/navtest.cjs",
-    "interact:suggestions": "node tools/suggestions_flow.cjs"
+    "interact:suggestions": "node tools/suggestions_flow.cjs",
+    "interact:intro": "node tools/intro_test.cjs",
+    "test:media": "node tools/media_test.cjs",
+    "test:a11y": "node tools/a11y.cjs"
   },
   "keywords": [],
   "author": "",

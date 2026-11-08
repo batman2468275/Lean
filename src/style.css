@@ -158,6 +158,11 @@ html[data-nature="1"] .u-deep, html[data-nature="2"] .u-deep { background: radia
   -webkit-mask-image: radial-gradient(ellipse 60% 85% at 50% 100%, #000 10%, transparent 72%); mask-image: radial-gradient(ellipse 60% 85% at 50% 100%, #000 10%, transparent 72%); }
 html[data-page="/design"] .u-grid, html[data-page="/models"] .u-grid { display: block; }
 /* nature (level 1+): a leaf-vein texture behind the Home hero, a topographic one behind About, 6 percent or less. Never behind text that needs contrast. */
+/* optional atmosphere media (assets/media, docs/higgsfield-brief.md): behind the canvas, mood only, Home and nature level 1+, a gentle fade towards the bottom so the stand's area stays clean */
+.u-video, .u-poster { display: none; inset: 0; width: 100%; height: 100%; object-fit: cover; background-size: cover; background-position: center; opacity: .5; -webkit-mask-image: linear-gradient(#000 0, #000 50%, transparent 100%); mask-image: linear-gradient(#000 0, #000 50%, transparent 100%); }
+html:is([data-nature="1"], [data-nature="2"])[data-page="/"] .u-video, html:is([data-nature="1"], [data-nature="2"])[data-page="/"] .u-poster { display: block; }
+@media (max-width: 899px) { .u-video { display: none !important; } }
+html.media-veins[data-page="/"] .u-texture, html.media-contours[data-page="/about"] .u-texture { opacity: .06; background-size: cover; }   /* the generated stills: 6 percent at most */
 .u-texture { display: none; inset: 0; opacity: .035; background-position: center; background-size: cover; background-repeat: no-repeat; }
 html[data-page="/"] .u-texture { background-image: var(--tex-veins); }
 html[data-page="/about"] .u-texture { background-image: var(--tex-contours); }

@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { CONFIG } from './src/config.js';
 import { routeMeta, PAGE_LIST, ADMIN_ROUTE } from './src/routes.js';
+import { SLOTS } from './src/media.js';
 
 const BASE = process.env.LEAN_BASE || '/';
 const meta = JSON.parse(fs.readFileSync('build/meta.json', 'utf8'));
@@ -52,6 +53,18 @@ for (const f of fs.readdirSync('assets/renders').filter((n) => n.endsWith('.webp
   (IMG[variant] ||= {})[look ? `${view}-${look}` : view] = `${BASE}assets/renders/${f}`;
 }
 
+/* ---------- optional atmosphere media (assets/media, see docs/higgsfield-brief.md): only the files that exist are listed and copied ---------- */
+const MEDIA_DIR = process.env.LEAN_MEDIA_DIR || 'assets/media';
+const MEDIA = {};
+for (const [slot, spec] of Object.entries(SLOTS)) {
+  const f = path.join(MEDIA_DIR, spec.file); if (!fs.existsSync(f)) continue;
+  const kb = fs.statSync(f).size / 1024;
+  if (kb > spec.maxKB) console.warn(`  media warning: ${spec.file} is ${kb | 0} KB, over its ${spec.maxKB} KB budget (${spec.use})`);
+  if (spec.siteOnly === false) continue;           // used by tools only (the social image), not shipped to the page
+  fs.mkdirSync('dist/assets/media', { recursive: true }); fs.copyFileSync(f, `dist/assets/media/${spec.file}`);
+  MEDIA[slot] = `${BASE}assets/media/${spec.file}`;
+}
+
 /* ---------- bundle ---------- */
 const out = await build({
   entryPoints: ['src/main.js'], bundle: true, minify: true, format: 'iife', target: 'es2020', write: false, legalComments: 'none',
@@ -78,7 +91,7 @@ const page = (title, description, noindex = false) => `<!doctype html>
 <link rel="stylesheet" href="${BASE}assets/style.css">
 <style>[hidden]{display:none!important}</style>
 <script>(function(){var n=new URLSearchParams(location.search).get("nature");try{if(n==null)n=sessionStorage.getItem("lean-nature")}catch(e){}if(n!=="0"&&n!=="1"&&n!=="2")n="1";document.documentElement.dataset.nature=n}())</script>
-<script>window.__BASE__=${JSON.stringify(BASE)};window.__META__=${JSON.stringify(meta)};window.__IMG__=${JSON.stringify(IMG)};</script>
+<script>window.__BASE__=${JSON.stringify(BASE)};window.__META__=${JSON.stringify(meta)};window.__IMG__=${JSON.stringify(IMG)};window.__MEDIA__=${JSON.stringify(MEDIA)};</script>
 </head><body>
 ${shell}
 <noscript><p style="position:relative;z-index:5;padding:120px 24px;font:17px system-ui;max-width:560px;margin:auto">Lean is a 3D-printed phone stand${from ? ', ' + from[0].toLowerCase().replace('from', 'from') : ''}. This site needs JavaScript to show the 3D stand.</p></noscript>
@@ -97,4 +110,4 @@ fs.writeFileSync('dist/_redirects', '/*    /index.html   200\n');               
 fs.writeFileSync('dist/vercel.json', JSON.stringify({ cleanUrls: true, rewrites: [{ source: '/((?!assets/).*)', destination: '/index.html' }] }, null, 2) + '\n');   // Vercel
 fs.writeFileSync('dist/.htaccess', 'RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^ /index.html [L]\n');   // Apache
 fs.writeFileSync('dist/robots.txt', 'User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n');
-console.log('dist/: %d pages, app.js %d KB, models %d KB, renders %d files', PAGE_LIST.length + 1, (out.outputFiles[0].text.length / 1024) | 0, (fs.statSync('dist/assets/model_cut.bin').size + fs.statSync('dist/assets/model_plain.bin').size) / 1024 | 0, fs.readdirSync('dist/assets/renders').length);
+console.log('dist/: %d pages, app.js %d KB, models %d KB, renders %d files, media %d file(s)', PAGE_LIST.length + 1, (out.outputFiles[0].text.length / 1024) | 0, (fs.statSync('dist/assets/model_cut.bin').size + fs.statSync('dist/assets/model_plain.bin').size) / 1024 | 0, fs.readdirSync('dist/assets/renders').length, Object.keys(MEDIA).length);

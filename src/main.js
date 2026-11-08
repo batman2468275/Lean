@@ -1,3 +1,4 @@
+import { initMedia, syncMedia } from './media.js';
 import { bindBoard, bindAdmin } from './suggestions.js';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -1185,7 +1186,7 @@ async function mount(def, hash, animate) {
   page = def;
   view.innerHTML = def.html.replace(/%%LOGO:(\d+(?:\.\d+)?)%%/g, (_, e) => logoSvg(+e));
   document.title = def.title; if (metaDesc) metaDesc.content = def.description || '';
-  document.documentElement.dataset.stage = def.stage === false ? 'off' : 'on'; document.documentElement.dataset.page = def.route;
+  document.documentElement.dataset.stage = def.stage === false ? 'off' : 'on'; document.documentElement.dataset.page = def.route; syncMedia();
   $$('#tabs a').forEach((a) => { const on = a.dataset.route === def.route; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   setMenu(false);
   hashLinks(view);
@@ -1257,5 +1258,6 @@ async function boot() {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); if (renderer) { screenKey = ''; rebuildLogoGeometry(); } });
   window.addEventListener('load', measure);
   document.documentElement.classList.add('ready');
+  initMedia({ reduce });   // optional atmosphere media, after the first paint (src/media.js)
 }
 boot();
