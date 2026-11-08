@@ -1,0 +1,23 @@
+<section class="panel light page-head" id="admin" data-tone="light">
+  <div class="wrap board">
+    <p class="eyebrow">Admin</p>
+    <h1 class="t">Suggestions admin</h1>
+    <form class="sg-form" id="ad-login" novalidate>
+      <label for="ad-token">Admin token</label>
+      <div class="sg-row"><input id="ad-token" type="password" autocomplete="current-password" required><button class="btn primary sm" type="submit">Open</button></div>
+      <p class="sg-msg" id="ad-msg" role="status" aria-live="polite"></p>
+    </form>
+    <div id="ad-main" hidden>
+      <div class="sg-bar">
+        <div class="seg" id="ad-filter" role="group" aria-label="Show">
+          <button type="button" data-status="pending" aria-pressed="true">Waiting</button>
+          <button type="button" data-status="approved" aria-pressed="false">On the board</button>
+          <button type="button" data-status="hidden" aria-pressed="false">Hidden</button>
+        </div>
+        <button class="btn ghost sm" id="ad-out" type="button">Sign out</button>
+      </div>
+      <ul class="sg-list" id="ad-list"></ul>
+      <p class="sg-empty" id="ad-empty" hidden>Nothing here.</p>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,34 @@
+{
+  "name": "lean-phone-stand",
+  "version": "1.0.0",
+  "description": "Lean phone stand: scroll-animated 3D product site",
+  "scripts": {
+    "build": "node build.mjs",
+    "prep:model": "python3 tools/prep_model.py models/source/dropshipping_phone_stand.stl build models",
+    "shoot": "node tools/shoot.cjs",
+    "interact": "node tools/interact.cjs",
+    "render:images": "node tools/render_views.cjs",
+    "test": "node --test tests/*.test.mjs",
+    "prep:magsafe": "python3 tools/make_magsafe.py",
+    "interact:magsafe": "node tools/interact_magsafe.cjs",
+    "make:og": "node tools/make_og.cjs",
+    "start": "node tools/serve.cjs",
+    "build:single": "node build.mjs && node build-single.mjs",
+    "test:single": "node tools/single_test.cjs",
+    "dev": "npm run build && node tools/serve.cjs",
+    "interact:nav": "node tools/navtest.cjs",
+    "interact:suggestions": "node tools/suggestions_flow.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.64.1"
+  },
+  "type": "module"
+}

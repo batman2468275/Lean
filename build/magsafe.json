@@ -1,0 +1,278 @@
+{
+ "crest_plane_mm": 0.2,
+ "rib_x": [
+  -24.99,
+  -16.66,
+  -8.34,
+  0.0,
+  8.34,
+  16.66,
+  24.98
+ ],
+ "valley_depth_mm": 2.24,
+ "face_top_s": 68.5,
+ "magnet": {
+  "grade": "N52",
+  "diameter": 6.0,
+  "thickness": 2.0,
+  "count": 5,
+  "coating": "Ni-Cu-Ni",
+  "polarity": "alternating N,S,N,S,N facing the phone (test against all facing the same way)"
+ },
+ "pocket": {
+  "clearance_radial": 0.15,
+  "depth": 2.2,
+  "chamfer": 0.4,
+  "radius": 3.15,
+  "diameter": 6.3
+ },
+ "pad": {
+  "radius_top": 4.4,
+  "radius_bottom": 6.2,
+  "depth": 3.5,
+  "above_crest": 0.02
+ },
+ "ring": {
+  "radius": 25.0,
+  "outer_diameter": 54.1,
+  "inner_diameter": 46.0
+ },
+ "phone_edge_s": 0.5,
+ "normal": [
+  0.0,
+  0.39126,
+  0.92028
+ ],
+ "up": [
+  -0.0,
+  0.92028,
+  -0.39126
+ ],
+ "sizes": {
+  "small": {
+   "label": "Small",
+   "phones": "iPhone 12 mini, 13 mini",
+   "ring_centre_mm": 60.5,
+   "assumed": true,
+   "min_wall_between_pockets_mm": 2.16,
+   "magnets": [
+    {
+     "x": -16.66,
+     "s": 42.36,
+     "centre": [
+      -16.66,
+      11.829,
+      -3.997
+     ]
+    },
+    {
+     "x": -8.34,
+     "s": 37.43,
+     "centre": [
+      -8.34,
+      7.293,
+      -2.069
+     ]
+    },
+    {
+     "x": 0.0,
+     "s": 36.0,
+     "centre": [
+      0.0,
+      5.975,
+      -1.508
+     ]
+    },
+    {
+     "x": 8.34,
+     "s": 37.43,
+     "centre": [
+      8.34,
+      7.293,
+      -2.069
+     ]
+    },
+    {
+     "x": 16.66,
+     "s": 42.36,
+     "centre": [
+      16.66,
+      11.829,
+      -3.997
+     ]
+    }
+   ],
+   "floor_thickness_mm": [
+    7.8,
+    7.8,
+    7.8,
+    7.8,
+    7.8
+   ],
+   "logo_zones": {
+    "low": [
+     6.0,
+     27.8
+    ],
+    "high": [
+     50.6,
+     66.5
+    ]
+   },
+   "files": {
+    "regular": "lean-regular-magsafe-small.stl",
+    "cutout": "lean-cutout-magsafe-small.stl"
+   }
+  },
+  "medium": {
+   "label": "Medium",
+   "phones": "iPhone 12, 13, 14, 15 and Pro (6.1 inch)",
+   "ring_centre_mm": 67.7,
+   "assumed": true,
+   "min_wall_between_pockets_mm": 2.16,
+   "magnets": [
+    {
+     "x": -16.66,
+     "s": 49.56,
+     "centre": [
+      -16.66,
+      18.455,
+      -6.814
+     ]
+    },
+    {
+     "x": -8.34,
+     "s": 44.63,
+     "centre": [
+      -8.34,
+      13.919,
+      -4.886
+     ]
+    },
+    {
+     "x": 0.0,
+     "s": 43.2,
+     "centre": [
+      0.0,
+      12.601,
+      -4.325
+     ]
+    },
+    {
+     "x": 8.34,
+     "s": 44.63,
+     "centre": [
+      8.34,
+      13.919,
+      -4.886
+     ]
+    },
+    {
+     "x": 16.66,
+     "s": 49.56,
+     "centre": [
+      16.66,
+      18.455,
+      -6.814
+     ]
+    }
+   ],
+   "floor_thickness_mm": [
+    7.8,
+    7.8,
+    7.8,
+    7.8,
+    7.8
+   ],
+   "logo_zones": {
+    "low": [
+     6.0,
+     35.0
+    ],
+    "high": [
+     57.8,
+     66.5
+    ]
+   },
+   "files": {
+    "regular": "lean-regular-magsafe-medium.stl",
+    "cutout": "lean-cutout-magsafe-medium.stl"
+   }
+  },
+  "large": {
+   "label": "Large",
+   "phones": "iPhone 12 to 15 Pro Max and Plus (6.7 inch)",
+   "ring_centre_mm": 73.8,
+   "assumed": true,
+   "min_wall_between_pockets_mm": 2.16,
+   "magnets": [
+    {
+     "x": -16.66,
+     "s": 55.66,
+     "centre": [
+      -16.66,
+      24.068,
+      -9.2
+     ]
+    },
+    {
+     "x": -8.34,
+     "s": 50.73,
+     "centre": [
+      -8.34,
+      19.533,
+      -7.272
+     ]
+    },
+    {
+     "x": 0.0,
+     "s": 49.3,
+     "centre": [
+      0.0,
+      18.215,
+      -6.712
+     ]
+    },
+    {
+     "x": 8.34,
+     "s": 50.73,
+     "centre": [
+      8.34,
+      19.533,
+      -7.272
+     ]
+    },
+    {
+     "x": 16.66,
+     "s": 55.66,
+     "centre": [
+      16.66,
+      24.068,
+      -9.2
+     ]
+    }
+   ],
+   "floor_thickness_mm": [
+    19.4,
+    7.8,
+    7.8,
+    7.8,
+    19.4
+   ],
+   "logo_zones": {
+    "low": [
+     6.0,
+     41.1
+    ],
+    "high": [
+     63.9,
+     66.5
+    ]
+   },
+   "files": {
+    "regular": "lean-regular-magsafe-large.stl",
+    "cutout": "lean-cutout-magsafe-large.stl"
+   }
+  }
+ }
+}

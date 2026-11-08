@@ -1,0 +1,9 @@
+numpy
+trimesh
+manifold3d
+shapely
+networkx
+scipy
+matplotlib
+pillow
+fonttools

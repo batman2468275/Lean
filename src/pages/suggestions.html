@@ -1,0 +1,50 @@
+<section class="chapter side" id="ideas" data-ch="ideas" data-tone="light" style="--h:1.5">
+  <div class="pin">
+    <div class="pin-in">
+      <div class="stack">
+        <div class="blk" data-beat="ideas">
+          <p class="eyebrow">Suggestions</p>
+          <h1 class="t">What should<br>we make next?</h1>
+          <p class="copy">Tell us what to build next, or what to change about the stand or this site.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="panel light" id="board" data-tone="light">
+  <svg class="wave" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 100V70C140 30 280 28 420 54S700 96 860 62S1160 10 1300 40S1400 62 1440 50V100Z"/></svg>
+  <svg class="vine vine-r" viewBox="0 0 160 900" preserveAspectRatio="xMinYMax meet" aria-hidden="true" focusable="false"><use href="#vine-art"/></svg>
+  <div class="wrap board">
+    <h2 class="rv">The ideas board.</h2>
+    <p class="rv board-lede">Send an idea, and vote for the ones you want most. We read every idea before it goes on the board, so yours may take a little while to appear.</p>
+
+    <form class="sg-form rv" id="sg-form" novalidate>
+      <label for="sg-text">Your idea</label>
+      <textarea id="sg-text" name="text" rows="4" maxlength="500" required aria-describedby="sg-count sg-msg" placeholder="A stand that folds flat, a wider base, a new color..."></textarea>
+      <div class="sg-row">
+        <div class="sg-name">
+          <label for="sg-name">Name (optional, shown with your idea)</label>
+          <input id="sg-name" name="name" type="text" maxlength="40" autocomplete="nickname">
+        </div>
+        <span class="sg-count" id="sg-count" aria-hidden="true">0 / 500</span>
+      </div>
+      <div class="sg-hp" aria-hidden="true"><label>Leave this empty <input id="sg-web" name="website" type="text" tabindex="-1" autocomplete="off"></label></div>
+      <div class="sg-send">
+        <button class="btn primary" id="sg-send" type="submit">Send idea</button>
+        <p class="sg-msg" id="sg-msg" role="status" aria-live="polite"></p>
+      </div>
+      <p class="sg-fine">Please no links or email addresses: this board is public. Your name and idea are stored so we can show them here; see <a href="/privacy">Privacy</a>.</p>
+    </form>
+
+    <div class="sg-bar rv">
+      <h3>On the board</h3>
+      <div class="seg" id="sg-sort" role="group" aria-label="Sort ideas">
+        <button type="button" data-sort="top" aria-pressed="true">Top</button>
+        <button type="button" data-sort="new" aria-pressed="false">New</button>
+      </div>
+    </div>
+    <ul class="sg-list" id="sg-list"></ul>
+    <p class="sg-empty" id="sg-empty" hidden>No ideas on the board yet. Be the first.</p>
+    <p class="sg-empty" id="sg-offline" hidden>The board can&rsquo;t be reached right now. You can still read the rest of the site.</p>
+  </div>
+</section>

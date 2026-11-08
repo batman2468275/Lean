@@ -1,0 +1,48 @@
+{
+  "_note": "Inputs for tools/make_magsafe.py. ring_centre_ratio is an ASSUMPTION (the brief gives 60-75 mm above the phone's bottom edge for a 147 mm phone, so 0.46 x height lands mid-range). Measure a real phone, edit the ratio or set ring_centre_mm, and re-run: npm run prep:magsafe Magnet diameter is 6 mm because the five magnets sit one per rib (8.3 mm apart): 8 mm magnets left a 0.16 mm wall between pockets.",
+  "magnet": {
+    "grade": "N52",
+    "diameter": 6.0,
+    "thickness": 2.0,
+    "count": 5,
+    "coating": "Ni-Cu-Ni",
+    "polarity": "alternating N,S,N,S,N facing the phone (test against all facing the same way)"
+  },
+  "pocket": {
+    "clearance_radial": 0.15,
+    "depth": 2.2,
+    "chamfer": 0.4
+  },
+  "pad": {
+    "radius_top": 4.4,
+    "radius_bottom": 6.2,
+    "depth": 3.5,
+    "above_crest": 0.02
+  },
+  "ring": {
+    "radius": 25.0,
+    "outer_diameter": 54.1,
+    "inner_diameter": 46.0
+  },
+  "phone_edge_s": 0.5,
+  "sizes": {
+    "small": {
+      "label": "Small",
+      "phones": "iPhone 12 mini, 13 mini",
+      "height": 131.5,
+      "ring_centre_ratio": 0.46
+    },
+    "medium": {
+      "label": "Medium",
+      "phones": "iPhone 12, 13, 14, 15 and Pro (6.1 inch)",
+      "height": 147.2,
+      "ring_centre_ratio": 0.46
+    },
+    "large": {
+      "label": "Large",
+      "phones": "iPhone 12 to 15 Pro Max and Plus (6.7 inch)",
+      "height": 160.4,
+      "ring_centre_ratio": 0.46
+    }
+  }
+}

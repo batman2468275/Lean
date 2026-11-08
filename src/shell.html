@@ -1,0 +1,73 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <!-- product renders are shot in neutral white; this filter paints them in the chosen colour (values set from main.js) -->
+  <filter id="tint" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%">
+    <feColorMatrix id="tint-m" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+  </filter>
+</svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- organic blob masks (objectBoundingBox units), used by .blob::before -->
+    <clipPath id="blob-a" clipPathUnits="objectBoundingBox"><path d="M0.5 0.02C0.73 -0.01 0.95 0.12 0.985 0.37C1.01 0.61 0.92 0.87 0.68 0.965C0.45 1.05 0.17 0.98 0.055 0.75C-0.04 0.52 0.04 0.22 0.2 0.1C0.3 0.04 0.4 0.03 0.5 0.02Z"/></clipPath>
+    <clipPath id="blob-b" clipPathUnits="objectBoundingBox"><path d="M0.12 0.2C0.24 0.02 0.5 -0.02 0.72 0.04C0.92 0.1 1.02 0.3 0.97 0.54C0.93 0.78 0.82 0.96 0.56 0.99C0.3 1.02 0.07 0.92 0.02 0.68C-0.02 0.48 0.03 0.32 0.12 0.2Z"/></clipPath>
+    <!-- a leaf: outline and midrib (stroke only, set by the CSS of whatever uses it) -->
+    <symbol id="leaf" viewBox="0 0 46 20"><path d="M0 10C12 -2 34 -2 46 10C34 22 12 22 0 10ZM2 10H44"/></symbol>
+    <!-- a climbing vine, line art -->
+    <symbol id="vine-art" viewBox="0 0 160 900"><path d="M30 900C80 800 -10 730 44 650S100 520 40 430S-4 300 56 214S104 100 70 0"/><use href="#leaf" width="46" height="20" transform="translate(46 820) rotate(-28) scale(1.0) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(30 770) rotate(205) scale(0.9) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(58 700) rotate(-50) scale(1.1) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(36 640) rotate(190) scale(1.0) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(84 575) rotate(-20) scale(0.95) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(56 525) rotate(215) scale(1.05) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(26 462) rotate(-60) scale(0.9) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(70 410) rotate(160) scale(1.0) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(14 350) rotate(-25) scale(1.05) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(46 292) rotate(200) scale(0.9) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(82 236) rotate(-42) scale(1.0) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(62 170) rotate(180) scale(0.95) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(96 110) rotate(-30) scale(0.9) translate(0 -10)"/><use href="#leaf" width="46" height="20" transform="translate(70 50) rotate(195) scale(0.8) translate(0 -10)"/></symbol>
+  </defs>
+</svg>
+<div class="underlay" id="underlay">
+  <div class="u-deep" id="u-deep"></div>
+  <div class="u-dapple"></div>
+  <div class="u-glow"></div>
+  <svg class="vine vine-l" viewBox="0 0 160 900" preserveAspectRatio="xMinYMax meet" aria-hidden="true" focusable="false"><use href="#vine-art"/></svg>
+  <svg class="vine vine-r" viewBox="0 0 160 900" preserveAspectRatio="xMinYMax meet" aria-hidden="true" focusable="false"><use href="#vine-art"/></svg>
+</div>
+<div class="drift" id="drift" aria-hidden="true"></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div class="fallback" id="fallback" aria-hidden="true"></div>
+
+<div class="overlay" id="overlay" aria-hidden="true">
+  <svg class="dims" id="dims">
+    <g id="dimH"><line class="l"/><line class="t1"/><line class="t2"/><line class="ld"/><text>75 mm</text></g>
+    <g id="dimD"><line class="l"/><line class="t1"/><line class="t2"/><line class="ld"/><text>68 mm</text></g>
+  </svg>
+  <div class="arc-lbl" id="arc-lbl" aria-hidden="true"></div>
+  <div class="callout" id="co-slot"><i class="ring"></i><span class="lbl">Cable cutout<b>16 &times; 9 mm</b></span></div>
+</div>
+
+<a class="skip" href="#view">Skip to content</a>
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="/" aria-label="Lean, home">%%LOGO:5%%</a>
+    <ul class="tabs" id="tabs" role="list">
+      <li><a href="/models" data-route="/models">Models</a></li>
+      <li><a href="/design" data-route="/design">Design</a></li>
+      <li><a href="/colors" data-route="/colors">Colors</a></li>
+      <li><a href="/customize" data-route="/customize">Customize</a></li>
+      <li><a href="/about" data-route="/about">About</a></li>
+      <li><a href="/suggestions" data-route="/suggestions">Suggestions</a></li>
+    </ul>
+    <div class="nav-r">
+      <button class="bag" id="bag" type="button" aria-label="Bag">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <i id="bag-n">0</i>
+      </button>
+      <a class="btn primary sm" href="/customize#order">Buy</a>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+
+<main id="view" tabindex="-1"></main>
+
+<footer data-tone="deep" id="foot">
+  <svg class="wave" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 100V60C60 20 150 20 205 60S350 100 411 60S560 20 616 60S760 100 822 60S970 20 1027 60S1170 100 1233 60S1380 20 1440 52V100Z"/></svg>
+  <div class="wrap">
+    <span>&copy; 2026 Astrofield Corporation. All rights reserved.</span>
+    <nav aria-label="Footer">
+      <a href="/models">Models</a><a href="/design">Design</a><a href="/colors">Colors</a><a href="/customize">Customize</a><a href="/about">About</a><a href="/suggestions">Suggestions</a><a href="/shipping-returns">Shipping &amp; returns</a><a href="/privacy">Privacy</a>
+    </nav>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>

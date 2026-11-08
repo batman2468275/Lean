@@ -1,0 +1,94 @@
+  <section class="chapter studio" id="studio" data-ch="studio" data-tone="light" style="--h:1">
+    <div class="wrap cz">
+      <div class="cz-stage" id="cz-stage" role="group" aria-label="Drag to rotate the stand">
+        <div class="cz-hint">Drag to rotate</div>
+      </div>
+      <div class="panel-card" id="cz-panel" data-t="model">
+        <h1 class="t">Make it yours.</h1>
+        <p class="sub">Pick a model and a color. Add the Lean logo or a line of text to the front or the back.</p>
+        <div class="seg cz-tabs" id="cz-tabs" role="group" aria-label="Section">
+          <button type="button" data-t="model" aria-pressed="true">Model</button>
+          <button type="button" data-t="color" aria-pressed="false">Color</button>
+          <button type="button" data-t="logo" aria-pressed="false">Logo</button>
+        </div>
+
+        <div class="grp" data-tab="model">
+          <div class="grp-h"><span>Model</span><b id="cz-vname"></b></div>
+          <div class="seg two" id="cz-variant" role="radiogroup" aria-label="Model"></div>
+        </div>
+
+        <div class="grp" data-tab="model" id="g-magsafe">
+          <div class="grp-h"><span id="cz-ms-title"></span><b id="cz-ms-state"></b></div>
+          <button type="button" class="switch" id="cz-magsafe" role="switch" aria-checked="false"><i aria-hidden="true"></i><span>MagSafe magnets</span><em class="sp" data-ms-price></em></button>
+          <p class="ms-note" id="cz-ms-note"></p>
+          <div id="cz-ms-size" hidden>
+            <div class="grp-h ms-h"><span>Your phone</span><b id="cz-phone-name"></b></div>
+            <div class="seg" id="cz-phone" role="radiogroup" aria-label="Phone size"></div>
+          </div>
+        </div>
+
+        <div class="grp" data-tab="color">
+          <div class="grp-h"><span>Color</span><b id="cz-cname"></b></div>
+          <div class="swatches" id="cz-sw" role="radiogroup" aria-label="Stand color"></div>
+        </div>
+
+        <div class="grp" data-tab="logo">
+          <div class="grp-h"><span>Logo</span><b id="cz-lname"></b></div>
+          <div class="seg" id="cz-mode" role="radiogroup" aria-label="Logo type">
+            <button type="button" role="radio" data-m="brand" aria-checked="true">Lean</button>
+            <button type="button" role="radio" data-m="text" aria-checked="false">Text</button>
+            <button type="button" role="radio" data-m="none" aria-checked="false">None</button>
+          </div>
+          <div class="field" id="f-text" hidden>
+            <label class="sr" for="in-text">Logo text</label>
+            <input id="in-text" type="text" maxlength="20" value="Your Brand" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="grp" data-tab="logo" id="g-place">
+          <div class="grp-h"><span>Placement and size</span><b id="cz-size-v"></b></div>
+          <div class="seg" id="cz-place" role="radiogroup" aria-label="Logo placement">
+            <button type="button" role="radio" data-p="front" aria-checked="true">Front</button>
+            <button type="button" role="radio" data-p="back" aria-checked="false">Back</button>
+          </div>
+          <label class="sr" for="in-size">Logo size</label>
+          <input class="range" id="in-size" type="range" min="25" max="100" value="85">
+        </div>
+
+        <div class="cz-foot">
+          <div class="price-big"><span id="cz-price"></span><em class="tag" id="cz-tag" hidden></em><small id="cz-price-note"></small></div>
+          <a class="btn primary" href="#order">Continue</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="panel light" id="order" data-tone="light">
+  <svg class="wave" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 100V70C140 30 280 28 420 54S700 96 860 62S1160 10 1300 40S1400 62 1440 50V100Z"/></svg>
+  <svg class="vine vine-r" viewBox="0 0 160 900" preserveAspectRatio="xMinYMax meet" aria-hidden="true" focusable="false"><use href="#vine-art"/></svg>
+  <div class="wrap">
+    <p class="eyebrow rv">Your order</p>
+    <h2 class="rv">Buy Lean.<br><span style="color:var(--text-2)">From <span data-from></span>.</span></h2>
+    <div class="buy">
+      <div class="buy-pic blob b rv" id="buy-pic">
+        <div class="gal-stage"><img id="gal-main" class="shot" alt="" decoding="async"></div>
+        <div class="gal-thumbs" id="gal-thumbs" role="tablist" aria-label="Product views"></div>
+        <p class="gal-cap" id="gal-cap" aria-live="polite"></p>
+      </div>
+      <div class="rv">
+        <div class="opt">
+          <div class="opt-h"><span>Your choices</span><a href="#studio">Change them</a></div>
+          <b id="b-choice" style="font-weight:600"></b>
+        </div>
+        <div class="opt">
+          <div class="opt-h"><span>Quantity</span></div>
+          <div class="qty"><button type="button" id="q-m" aria-label="Decrease quantity">&minus;</button><output id="q-v" aria-live="polite">1</output><button type="button" id="q-p" aria-label="Increase quantity">+</button></div>
+        </div>
+        <ul class="lines" id="b-lines"></ul>
+        <div class="total"><span>Total</span><b id="b-total"></b></div>
+        <button class="btn dark block" id="add" type="button">Add to bag</button>
+        <p class="fine">Taxes and shipping are calculated at checkout. <a href="/shipping-returns" style="text-decoration:underline">Shipping &amp; returns</a>. <a href="/suggestions" style="text-decoration:underline">Tell us what to make next</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
