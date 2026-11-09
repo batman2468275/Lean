@@ -141,7 +141,20 @@ The router needs http(s): `dist/index.html` opened from disk will not route. See
 - **Logo decal**: canvas texture (`drawLogoTexture`) projected with `DecalGeometry` onto the slope face (front) or rear leg (back); drawn from `src/logo.json` with `Path2D`. Default size is 85% of the face.
 - Mesh coordinates: Y up, the lip points toward +Z. `meta.json` holds the slope normal/up, trough corner, floor Y and the silhouette path used by the Design drawing. Models load at boot; if that fails the site falls back to the flat no-WebGL picture.
 
-## Product images
+## Product pictures (docs/images.md)
+
+- **Many pictures, all renders of the real print files** (never AI-made, never photos of people): `src/shots.js` is the manifest (id, file, width, height, alt, model, colour, view; names and alt text come from `CONFIG`). Specs in `tools/shot_specs.js`, scene in `tools/shots_harness.js` (shares `src/props.js` with the live scene so magnets, phone, plug and cable are identical), renderer `npm run render:shots` (`-- --only a,b`, `-- --preview <dir>`, `-- --calibrate`, `-- --check`), compositing and budgets `tools/finish_shots.py`, review sheet `tools/shots_sheet.py` -> `docs/shots-contact-sheet.png`. Each exists at 1200 px and `@640` (budgets 90 KB / 30 KB, `tests/shots.test.mjs`).
+- Colourway pictures are true colour: one albedo gain per colour in `tools/shot_gains.json`; accuracy table in `docs/colour-accuracy.json` (Black dE about 11, Signal Orange about 13, the rest under 4). The Colors page says on-screen colours are approximate.
+- In a page fragment write `%%SHOT:<id>[:eager][:nocap][:sm|:md|:lg|:wide]%%` (`src/shotimg.js`): srcset, reserved size, alt from the manifest, requested only when about to scroll into view (so first-screen weight does not grow). `[data-shots]` containers with no picture are removed. Captions that need `CONFIG` names are built in `buildShotGrids()` in `main.js`.
+- **Real photos**: drop `assets/photos/<id>.webp` (id from `src/shots.js`); the build uses it instead of the render and drops the "Render" caption.
+- The one-file demo inlines only `plain-3q-left` and `cutout-3q-left` (640 px); every other picture token becomes nothing (no broken icons).
+- In-chapter pictures beside the copy were tried and removed: they duplicate the live 3D stand. Pictures live in panels, in the sideways band (`.hband`, Home and Design) and in the MagSafe size beats (desktop only).
+
+## Page lengths (the owner asked for longer scrolls)
+
+Targets in screens at 1440x900 and 390x844, footer included, within 10 percent: Home 10, Models 20, Design 9, Colors 10, Customize 6, About 6, Suggestions 5. `npm run measure:scroll` is the gate (`--report` only prints). Chapters are built with `seq()` (`src/timeline.js`): rows `[name, screens, pose, extra]` whose screens add up to the chapter's `--h` minus 1. Every extra screen must change something visible; `tests/timeline.test.mjs` checks beats cover 0..1 (no hold over 0.12), none under 0.4 screens, and every copy block's beat exists. `node tools/stops.cjs <out> <w> <h> <tag> [stops] [routes]` takes scroll-stop screenshots.
+
+## Product images (the original studio set)
 
 - Six renders in `assets/renders/` (`plain|cutout` x `front|side|detail`), plus the Black set. `build.mjs` copies them to `dist/assets/renders/` and passes URLs as `window.__IMG__` (served as files).
 - **Black has its own set** (`<variant>-<view>-black.webp`, `look: 'black'` in `CONFIG`): tinting a white render near-black flattens ribs and slot. Render it with `TAG=-black LOOK='{"color":1579034,"exposure":1.0,"neutral":true}' node tools/render_views.cjs assets/renders`. Any colour with a `look` needs such a set.
