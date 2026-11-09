@@ -759,3 +759,21 @@ html:not(.ready) #foot { visibility: hidden; }
 .cname-s { margin-top: 12px; }
 .cname-intro { padding-bottom: 44px; }
 .cname-lineup { padding-bottom: 56px; }
+
+/* ====================================================================
+   GPU safety (src/gpu.js, docs/gpu-safety.md). On touch the canvas is opaque and draws the stage itself, is sized from the large viewport so the toolbar never re-allocates it,
+   and the DOM effects that sit over a live WebGL canvas (backdrop blur, masks, a repeating-gradient rail, permanent will-change) are replaced by static equivalents.
+   ?gl=domfx / ?gl=old bring the effects back for A/B on a device. No overlay, grain or blur is ever used to hide the floor.
+   ==================================================================== */
+html.gl-stable #gl { height: 100vh; height: 100lvh; }
+html.gl-opaque:not(.no-gl):not([data-stage="off"]) .underlay { visibility: hidden; }   /* the canvas draws the same stage itself */
+html.nodomfx .nav { background: var(--bg); background: color-mix(in srgb, var(--nav-bg) 40%, var(--bg)); backdrop-filter: none; -webkit-backdrop-filter: none; }
+html.nodomfx .panel-card { background: var(--surface); background: color-mix(in srgb, var(--surface) 96%, transparent); backdrop-filter: none; -webkit-backdrop-filter: none; }
+html.nodomfx .callout .lbl { background: rgba(13, 15, 14, .94); backdrop-filter: none; -webkit-backdrop-filter: none; }
+html.nodomfx .pair-switch button { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
+html.nodomfx .callout { will-change: auto; }
+html.nodomfx .rail::before { background: var(--text-3); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='11'%3E%3Crect width='4' height='1'/%3E%3C/svg%3E") repeat-y right top / 4px 11px; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='11'%3E%3Crect width='4' height='1'/%3E%3C/svg%3E") repeat-y right top / 4px 11px; }
+#gl-panel { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 300; max-height: 60svh; overflow: auto; padding: 10px; background: #000; color: #d7ffe6; border: 1px solid #35f07f; border-radius: 10px; font: 11px/1.45 ui-monospace, Menlo, monospace; }
+#gl-panel pre { margin: 8px 0; white-space: pre-wrap; word-break: break-all; user-select: text; -webkit-user-select: text; }
+#gl-panel button { margin: 0 4px 6px 0; padding: 6px 9px; border-radius: 8px; border: 1px solid #35f07f; background: #0b1410; color: #d7ffe6; font: inherit; }
+#gl-panel button[aria-pressed="true"] { background: #35f07f; color: #00150a; }

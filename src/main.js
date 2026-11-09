@@ -1,4 +1,5 @@
 import { initMedia, syncMedia } from './media.js';
+import { GPU, pixelRatioFor, mountDebugPanel } from './gpu.js';   // the device profile and flags: how the scene is built (docs/gpu-safety.md)
 import { PAD_TOP, phoneSize, roundedRect, magnetGeometries, phoneGeometries, plugGeometry, cableCurve } from './props.js';
 import { bindBoard, bindAdmin } from './suggestions.js';
 import * as THREE from 'three';
@@ -73,9 +74,20 @@ const launchTag = (u) => (u.list != null ? `${CONFIG.launchLabel}, save ${money(
 const canvas = $('#gl');
 let renderer = null;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  // touch: a genuinely opaque drawing buffer (three.js always asks for an alpha channel, so the context is made here with alpha: false) and no MSAA on retina (src/gpu.js)
+  let ctx = null;
+  if (!GPU.settings.alpha) { try { ctx = canvas.getContext('webgl2', { alpha: false, antialias: GPU.settings.aa, powerPreference: 'high-performance' }) || canvas.getContext('webgl', { alpha: false, antialias: GPU.settings.aa, powerPreference: 'high-performance' }); } catch (e) { ctx = null; } }
+  renderer = new THREE.WebGLRenderer(ctx ? { canvas, context: ctx } : { canvas, antialias: GPU.settings.aa, alpha: GPU.settings.alpha, powerPreference: 'high-performance' });
 } catch (e) {
   document.documentElement.classList.add('no-gl');
+}
+if (renderer) {   // what the debug panel (?debug=gl) reports
+  try {
+    const gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info'), hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+    Object.assign(GPU.info, { renderer: dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : '', vendor: dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : '', highp: hp ? (hp.precision > 0 ? `yes (${hp.precision} bits)` : 'NO') : '?',
+      maxTex: gl.getParameter(gl.MAX_TEXTURE_SIZE), samples: gl.getParameter(gl.SAMPLES), attrs: JSON.stringify(gl.getContextAttributes()), halfFloat: !!gl.getExtension('EXT_color_buffer_half_float') || !!gl.getExtension('EXT_color_buffer_float'),
+      floatBuf: !!gl.getExtension('EXT_color_buffer_float'), gl2: typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext, three: THREE.REVISION });
+  } catch (e) { /* the report just shows less */ }
 }
 
 const scene = new THREE.Scene();
@@ -177,12 +189,13 @@ const standMats = [];
 function patchWipe(material, { origin, reach, axes, colorB = wipe.to, shade = false }) {
   const u = { uColB: { value: colorB }, uWipe: { value: 0 }, uOrigin: { value: origin }, uReach: { value: reach }, uSoft: { value: WIPE_SOFT } };
   wipeUniforms.push(u);
+  // every varying and uniform the wipe reads is highp in the fragment stage (mobile GPUs default to mediump when told nothing)
   material.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u);
     if (shade) Object.assign(sh.uniforms, SHADE);
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWp = position;');
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying highp vec3 vWp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWp = position;');
     let fs = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWp; uniform vec3 uColB; uniform vec3 uOrigin; uniform float uWipe, uReach, uSoft;' + (shade ? ' uniform float uRibs, uXray, uScan; uniform vec2 uScanR; uniform vec3 uGlowCol;' : ''))
+      .replace('#include <common>', '#include <common>\nvarying highp vec3 vWp; uniform highp vec3 uColB; uniform highp vec3 uOrigin; uniform highp float uWipe, uReach, uSoft;' + (shade ? ' uniform highp float uRibs, uXray, uScan; uniform highp vec2 uScanR; uniform highp vec3 uGlowCol;' : ''))
       .replace('#include <color_fragment>', `#include <color_fragment>
         { float d = distance(${axes === 'xy' ? 'vWp.xy, uOrigin.xy' : 'vWp, uOrigin'}) / uReach;
           float f = uWipe * (1.0 + uSoft);
@@ -228,24 +241,35 @@ function poolFor(c, out, k) {
   if (document.documentElement.dataset.nature === '0') out.lerp(tmpColor.copy(POOL_NEUTRAL).multiplyScalar(0.13), 0.5);   // level 0: a neutral pool, not a green one
   return out.multiplyScalar(k);
 }
+/* blending of the pool, the slot glow and the cut sheet: additive on desktop; plain alpha blending on touch (always valid for a premultiplied canvas, and visually the same over this dark scene) */
+const BLEND = GPU.settings.additive ? THREE.AdditiveBlending : THREE.NormalBlending;
+const GLOW_INK = GPU.settings.additive ? 0x9ad98a : 0xb8f2a6;
+const BG_ENC = new THREE.Color(0.043, 0.059, 0.05);   // the stage background in the blending (sRGB) space, used to turn "add this to the background" into an equivalent normal-blended colour
+function normalPool(c) {   // additive: bg + c. Normal blending equals that when its colour is bg + c (in the encoded space the framebuffer blends in)
+  if (GPU.settings.additive) return c;
+  c.convertLinearToSRGB(); c.r += BG_ENC.r; c.g += BG_ENC.g; c.b += BG_ENC.b; return c.convertSRGBToLinear();
+}
 function buildScene() {
   window.__SCENE_BUILDS = (window.__SCENE_BUILDS || 0) + 1;   // test hook: the scene must be built exactly once, however many pages you visit
   SHADE.uScanR.value.set(META.floor_y, META.floor_y + 76);
-  const pm = new THREE.PMREMGenerator(renderer);
-  scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.5;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  if (GPU.settings.env) {   // ?gl=noenv skips the half-float PMREM environment (the existing lights are then the only light)
+    const pm = new THREE.PMREMGenerator(renderer);
+    scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.5;
+  }
+  applyPixelRatio();
+  buildBackdrop();
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 0.77;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = GPU.settings.shadow;
 
   // a dark studio: a warm-white key from the upper left, a green-tinted rim from behind right and a cool rim from behind left (they outline the ribs and carry the glints), a low hemisphere fill
   const key = new THREE.DirectionalLight(0xfff3e2, 2.1);
-  key.position.set(-150, 270, 230); key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.position.set(-150, 270, 230); key.castShadow = GPU.settings.shadow;
+  key.shadow.mapSize.set(GPU.settings.shadowSize, GPU.settings.shadowSize);   // 1024 on touch, 2048 on desktop
   Object.assign(key.shadow.camera, { left: -170, right: 170, top: 170, bottom: -170, near: 20, far: 800 });
-  key.shadow.bias = -0.0004; key.shadow.normalBias = 0.5; key.shadow.radius = 5;
+  key.shadow.bias = -0.0004; key.shadow.normalBias = 0.5; key.shadow.radius = GPU.touch && !GPU.old ? 3 : 5;
   scene.add(key);
   const rim = new THREE.DirectionalLight(0xcfffe2, 2.4); rim.position.set(210, 130, -250); scene.add(rim);
   const rim2 = new THREE.DirectionalLight(0xbfd6ff, 1.5); rim2.position.set(-250, 90, -150); scene.add(rim2);
@@ -283,15 +307,15 @@ function buildScene() {
     stops.forEach(([o, a]) => r.addColorStop(o, `rgba(255,255,255,${a})`)); g.fillStyle = r; g.fillRect(0, 0, 256, 256);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   };
-  floor = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.ShadowMaterial({ opacity: 0.6, color: 0x000000 }));
-  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; floor.renderOrder = 0; scene.add(floor);
+  floor = new THREE.Mesh(new THREE.PlaneGeometry(GPU.settings.floorSize, GPU.settings.floorSize), new THREE.ShadowMaterial({ opacity: 0.6, color: 0x000000 }));   // only as big as the shadow frustum (340) plus a margin: outside it nothing is visible
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; floor.renderOrder = 0; floor.visible = GPU.settings.shadow; scene.add(floor);
   groundTo = new THREE.Color('#223028');
-  const groundMat = new THREE.MeshBasicMaterial({ map: radial([[0, 1], [0.45, 0.6], [0.78, 0.18], [1, 0]]), color: '#223028', transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  const groundMat = new THREE.MeshBasicMaterial({ map: radial([[0, 1], [0.45, 0.6], [0.78, 0.18], [1, 0]]), color: '#223028', transparent: true, opacity: 1, blending: BLEND, depthWrite: false, toneMapped: false });
   patchWipe(groundMat, { origin: new THREE.Vector3(0, 0, 0), reach: 150, axes: 'xy', colorB: groundTo });   // the ground tint follows the colour wipe, radiating from under the stand
   ground = new THREE.Mesh(new THREE.PlaneGeometry(470, 470), groundMat);
-  ground.rotation.x = -Math.PI / 2; ground.renderOrder = -2; scene.add(ground);
+  ground.rotation.x = -Math.PI / 2; ground.renderOrder = -2; ground.visible = GPU.settings.ground; scene.add(ground);
   contact = new THREE.Mesh(new THREE.PlaneGeometry(150, 130), new THREE.MeshBasicMaterial({ map: radial([[0, 0.9], [0.55, 0.45], [1, 0]]), color: 0x000000, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false }));
-  contact.rotation.x = -Math.PI / 2; contact.renderOrder = -1; scene.add(contact);
+  contact.rotation.x = -Math.PI / 2; contact.renderOrder = -1; contact.visible = GPU.settings.contact; scene.add(contact);
   contact2 = contact.clone(); contact2.visible = false; scene.add(contact2);   // the same soft shadow under the second stand
 
   // phone
@@ -323,11 +347,11 @@ function buildScene() {
 
   // the slot, outlined: a glowing stadium on the lip where the cable goes through (the x-ray beat)
   const ring = roundedRect(17.8, 10.8, 5.4); ring.holes.push(new THREE.Path(roundedRect(16, 9, 4.5).getPoints(24)));
-  slotGlow = new THREE.Mesh(new THREE.ShapeGeometry(ring, 16), new THREE.MeshBasicMaterial({ color: 0x9ad98a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  slotGlow = new THREE.Mesh(new THREE.ShapeGeometry(ring, 16), new THREE.MeshBasicMaterial({ color: GLOW_INK, transparent: true, opacity: 0, blending: BLEND, depthTest: false, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
   slotGlow.position.copy(corner).addScaledVector(nOut, 4.1).addScaledVector(sUp, 0.2);
   slotGlow.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, nOut, sDown)); slotGlow.renderOrder = 5; slotGlow.visible = false; pivot.add(slotGlow);
   // the cut: a thin glowing sheet at the clip plane while it sweeps across the base
-  cutLine = new THREE.Mesh(new THREE.PlaneGeometry(84, 100), new THREE.MeshBasicMaterial({ color: 0x9ad98a, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  cutLine = new THREE.Mesh(new THREE.PlaneGeometry(84, 100), new THREE.MeshBasicMaterial({ color: GLOW_INK, transparent: true, opacity: 0.4, blending: BLEND, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
   cutLine.rotation.y = Math.PI / 2; cutLine.renderOrder = 4; cutLine.visible = false; pivot.add(cutLine);
   // the lean angle: an arc around the point where the slope meets the floor, drawn on with setDrawRange like the cable
   ARC.az = corner.z + ((floorY - corner.y) / sUp.y) * sUp.z; ARC.ay = floorY + 0.4; ARC.ang = META.slope.angle_deg * Math.PI / 180;
@@ -445,7 +469,7 @@ function updateTone(y) {
   else { name = 'dark'; const line = y + 70; for (const p of layout.panels) if (line >= p.top) name = p.tone; }
   if (name !== toneName) { toneName = name; document.documentElement.dataset.tone = name; nav.dataset.tone = name; }
   const o = (inStory ? toneStory : 0).toFixed(3);
-  if (o !== updateTone.last) { updateTone.last = o; $('#u-deep').style.opacity = o; }
+  if (o !== updateTone.last) { updateTone.last = o; $('#u-deep').style.opacity = o; bgDeep = +o; }
 }
 
 function measure() {
@@ -1038,9 +1062,22 @@ function staticPose(sg, now) {
   return holdPose;
 }
 
+/* Sizing. On touch the drawing buffer is sized from the LARGE viewport height (lvh), which does not change when the browser toolbar shows or hides, so scrolling never re-allocates
+   (and clears) the canvas; that re-allocation is a likely cause of the flicker on phones. The toolbar only moves the camera's view window (vShift) so the stand stays centred in what is visible.
+   A real change (width, rotation, or a height change of 20 percent or more) still re-allocates. Pixel ratio: min(devicePixelRatio, 2, sqrt(maxpx / area)) (src/gpu.js). */
+const STABLE = GPU.touch && !GPU.old;
+const lvhProbe = document.createElement('div'); lvhProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:100lvh;visibility:hidden;pointer-events:none'; lvhProbe.setAttribute('aria-hidden', 'true'); document.body.appendChild(lvhProbe);
+let vShift = 0, sized = false;
+function stableHeight() { const l = lvhProbe.offsetHeight; return Math.max(window.innerHeight, l || 0); }
+function applyPixelRatio() { if (renderer) renderer.setPixelRatio(pixelRatioFor(W, H)); }
 function resize() {
-  W = window.innerWidth; H = window.innerHeight;
-  if (renderer) { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setSize(W, H, false); }   // pixel ratio capped at 2
+  const iw = window.innerWidth, ih = STABLE ? stableHeight() : window.innerHeight;
+  if (STABLE && sized && iw === W && Math.abs(ih - H) / H < 0.2) {   // the toolbar (or a keyboard sliver), not a real resize: keep the buffer, re-centre the view
+    vShift = Math.max(0, (H - window.innerHeight) / 2); invalidate(); return;
+  }
+  W = iw; H = ih; sized = true;
+  if (renderer) { applyPixelRatio(); renderer.setSize(W, H, false); GPU.stats.setSize++; GPU.stats.resizes = Math.max(0, GPU.stats.setSize - 1); const v = renderer.getDrawingBufferSize(new THREE.Vector2()); GPU.info.bw = v.x; GPU.info.bh = v.y; GPU.info.pr = renderer.getPixelRatio(); backdropSize(v.x, v.y); }
+  vShift = STABLE ? Math.max(0, (H - window.innerHeight) / 2) : 0;
   camera.aspect = W / H; camera.updateProjectionMatrix();
   measure(); if (page) setPair(pairUI.index);
 }
@@ -1059,6 +1096,57 @@ function updateHud(now, pos, sg) {
 }
 
 let cutShown = NaN;
+/* ---- the opaque canvas draws its own stage (touch): the same gradients as the CSS .underlay and .u-deep, plus the page glow under the stand, in one full-screen shader.
+   Static, monochrome ordered dither (never per-channel, never per-frame) keeps the dark gradients from banding. Colours mirror the CSS (src/style.css, "fixed stage"). ---- */
+let backdrop = null, bgDeep = 0, bgGlowKey = '', bgGlowAt = 0;
+const BG_LEVELS = {   // [top, middle, bottom, middle stop] of the base gradient and of the deeper chapters, per nature level
+  0: { base: ['#0c0d0d', '#111312', '#0c0d0d', 0.6], deep: ['#070908', '#0a0d0b', '#060807'], nat: 0 },
+  1: { base: ['#0a100c', '#0e1310', '#0a0f0c', 0.58], deep: ['#060a07', '#090d0a', '#050806'], nat: 1 },
+};
+function buildBackdrop() {
+  if (GPU.settings.alpha) return;
+  const L = BG_LEVELS[document.documentElement.dataset.nature === '0' ? 0 : 1], col = (h) => new THREE.Color(h).convertLinearToSRGB();   // the shader works in sRGB so it matches the CSS exactly
+  const u = {
+    uRes: { value: new THREE.Vector2(1, 1) }, b0: { value: col(L.base[0]) }, b1: { value: col(L.base[1]) }, b2: { value: col(L.base[2]) }, uMid: { value: L.base[3] },
+    d0: { value: col(L.deep[0]) }, d1: { value: col(L.deep[1]) }, d2: { value: col(L.deep[2]) }, uDeep: { value: 0 }, uNat: { value: L.nat }, uGlow: { value: new THREE.Vector4(0.12, 0.6, 0.35, 0.22) },
+  };
+  const m = new THREE.ShaderMaterial({
+    uniforms: u, depthTest: false, depthWrite: false, toneMapped: false,
+    vertexShader: 'void main() { gl_Position = vec4(position.xy, 1.0, 1.0); }',
+    fragmentShader: `precision highp float;
+      uniform highp vec2 uRes; uniform highp vec3 b0, b1, b2, d0, d1, d2; uniform highp float uMid, uDeep, uNat; uniform highp vec4 uGlow;
+      float m2(float x, float y) { float xr = abs(x - y); return x * (1.0 - xr) + (2.0 + y) * xr; }
+      float bayer4(vec2 p) { vec2 q = mod(floor(p), 4.0); float x0 = mod(q.x, 2.0), y0 = mod(q.y, 2.0), x1 = floor(q.x / 2.0), y1 = floor(q.y / 2.0); return 4.0 * m2(x0, y0) + m2(x1, y1); }
+      vec3 grad(vec3 a, vec3 b, vec3 c, float t, float mid) { return t < mid ? mix(a, b, t / mid) : mix(b, c, (t - mid) / (1.0 - mid)); }
+      void main() {
+        vec2 uv = gl_FragCoord.xy / uRes; float t = 1.0 - uv.y;                       // t = 0 at the top of the screen, like the CSS gradients
+        vec3 c = grad(b0, b1, b2, t, uMid);
+        if (uNat > 0.5) { float d = length((vec2(uv.x, t) - vec2(0.2, -0.04)) / vec2(0.68, 0.52)); c = mix(c, vec3(53.0, 240.0, 127.0) / 255.0, 0.07 * clamp(1.0 - d / 0.7, 0.0, 1.0)); }
+        vec3 dp = grad(d0, d1, d2, t, 0.6);
+        if (uNat > 0.5) { float d = length((vec2(uv.x, t) - vec2(0.74, 0.0)) / vec2(0.6, 0.46)); dp = mix(dp, vec3(53.0, 240.0, 127.0) / 255.0, 0.05 * clamp(1.0 - d / 0.7, 0.0, 1.0)); }
+        c = mix(c, dp, uDeep);
+        float g = length((vec2(uv.x, t) - vec2(0.5, 0.66)) / vec2(0.46, 0.40));         // the glow under the stand (the CSS .u-glow)
+        c = mix(c, uGlow.rgb, uGlow.a * clamp(1.0 - g / 0.72, 0.0, 1.0));
+        c += ((bayer4(gl_FragCoord.xy) + 0.5) / 16.0 - 0.5) / 255.0;                   // static, monochrome ordered dither: the same offset on all three channels
+        gl_FragColor = vec4(c, 1.0);
+      }`,
+  });
+  backdrop = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m); backdrop.frustumCulled = false; backdrop.renderOrder = -100; scene.add(backdrop);
+  renderer.setClearColor(0x0a0f0c, 1);
+}
+function backdropSize(w, h) { if (backdrop) backdrop.material.uniforms.uRes.value.set(w, h); }
+/** called every frame on touch: follows the deep-tone blend and the page glow (read from the computed --glow, which crossfades). Returns true when something changed. */
+function syncBackdrop(now) {
+  if (!backdrop) return false;
+  const u = backdrop.material.uniforms; let changed = false;
+  if (Math.abs(u.uDeep.value - bgDeep) > 0.002) { u.uDeep.value = bgDeep; changed = true; }
+  if (now - bgGlowAt > 90) {
+    bgGlowAt = now; const g = getComputedStyle(document.documentElement).getPropertyValue('--glow');
+    if (g !== bgGlowKey) { bgGlowKey = g; const n = g.match(/[\d.]+/g); if (n && n.length >= 3) { u.uGlow.value.set(+n[0] / 255, +n[1] / 255, +n[2] / 255, n.length > 3 ? +n[3] : 1); changed = true; } }
+  }
+  return changed;
+}
+
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
@@ -1097,6 +1185,8 @@ function frame(now) {
     document.documentElement.style.setProperty('--glow', lum > 0.55 ? 'rgba(255,255,255,.15)' : lum < 0.06 ? 'rgba(170,190,255,.2)' : `rgba(${hx >> 16 & 255},${hx >> 8 & 255},${hx & 255},.2)`);
   }
 
+  if (syncBackdrop(now)) invalidate();
+
   // which geometry the main stand shows: the timeline's `cut` (0 Regular, 1 With cutout), or on Customize the selected model, swapped by a sweep so it never pops
   const hasStudio = !!layout.chapters.studio;
   const cutTarget = hasStudio ? (S.variant === 'cutout' ? 1 : 0) : s.cut;
@@ -1129,7 +1219,7 @@ function frame(now) {
   floor.position.y = fl - 0.05; ground.position.y = fl + 0.15; contact.position.y = fl + 0.3; contact2.position.y = fl + 0.3;
   ground.scale.setScalar(s.scale * (1 + 0.55 * s.pairw)); contact.scale.setScalar(s.scale); contact2.scale.setScalar(s.scale);
   contact.position.x = pivot.position.x; contact2.position.x = pivotB.position.x; contact2.visible = pivotB.visible;
-  { const k = 1 - 0.3 * toneStory; poolFor(wipe.from, ground.material.color, k); poolFor(wipe.to, groundTo, k); }   // the pool follows the colour wipe, a little dimmer in the deep chapters
+  { const k = 1 - 0.3 * toneStory; normalPool(poolFor(wipe.from, ground.material.color, k)); normalPool(poolFor(wipe.to, groundTo, k)); }   // the pool follows the colour wipe, a little dimmer in the deep chapters
   if (logoDecal) { logoDecal.visible = s.logo > 0.02; logoDecal.material.opacity = s.logo; }
   if (magGroup) magGroup.visible = S.magsafe || s.mag > 0.5;
   // ribs lighting up one at a time, and the x-ray look
@@ -1159,7 +1249,7 @@ function frame(now) {
   const el = s.elev * Math.PI / 180;
   camera.position.set(0, s.ty + Math.sin(el) * s.dist, Math.cos(el) * s.dist);
   camera.lookAt(0, s.ty, 0);
-  camera.setViewOffset(W, H, -s.sx * W, -s.sy * H, W, H);
+  camera.setViewOffset(W, H, -s.sx * W, -s.sy * H + vShift, W, H);
 
   // Is there anything new to draw? (Static scroll positions, finished wipes and idle pages cost no GPU time; a gently swaying stand is drawn at 30 fps.)
   let moved = dirty;
@@ -1248,6 +1338,7 @@ window.LEAN = {
   length: () => layout && layout.D, beats: () => (tl ? tl.names : []),
 };   // read-only handle for tests and the print shop preview
 async function boot() {
+  mountDebugPanel();   // ?debug=gl
   const sess = ST.loadSession(CONFIG, store);
   S.bag = sess.bag; Object.assign(S, sess.state, ST.parseQuery(CONFIG, appSearch())); S.hex = byId(S.colorId).hex; flip.target = S.place === 'back' ? Math.PI : 0;
   if (renderer) {
