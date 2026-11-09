@@ -646,12 +646,12 @@ function fillStatic() {
   $('#cmeta-copy').textContent = `${NUMWORD[CONFIG.colors.length] || CONFIG.colors.length} colors. Pick yours in the studio.`;
   const cn = $('#cnames'); const N = CONFIG.cycle.length;
   CONFIG.cycle.forEach((id, i) => {
-    const d = document.createElement('div'); d.className = 'blk cname'; d.textContent = byId(id).name; d.dataset.beat = id; cn.appendChild(d);
+    const d = document.createElement('div'); d.className = 'blk cname'; d.dataset.beat = id; const nm = document.createElement('span'); nm.className = 'cname-t'; nm.textContent = byId(id).name; const sub = document.createElement('span'); sub.className = 'cname-s'; sub.textContent = CONFIG.variants.map((v) => `${v.name} ${money(PR.unitPrice(CONFIG, { variant: v.id }).now)}`).join('  ·  '); d.append(nm, sub); cn.appendChild(d);
   });
   CONFIG.cycle.forEach((id) => {   // chapter swatches: jump to that colour's slice of the story
     const c = byId(id); const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.setProperty('--c', c.hex);
     b.setAttribute('aria-label', 'Jump to ' + c.name); b.title = c.name;
-    b.addEventListener('click', () => { const i = CONFIG.cycle.indexOf(id); const L = layout.chapters.colors; window.scrollTo({ top: L.top + ((i + 0.5) / CONFIG.cycle.length) * L.L, behavior: instant ? 'auto' : 'smooth' }); });
+    b.addEventListener('click', () => { const r = tl && tl.range(id); if (r) window.scrollTo({ top: (r.y0 + r.y1) / 2, behavior: instant ? 'auto' : 'smooth' }); });
     $('#sw-colors').appendChild(b);
   });
   chapterSw = $$('#sw-colors .sw');
@@ -668,6 +668,11 @@ function buildShotGrids() {
     return cells ? `<a class="cg-col rv" href="/customize?color=${c.id}#order" style="--c:${c.hex}" aria-label="Choose ${c.name}"><b><i></i>${c.name}</b>${cells}</a>` : '';
   }).join('');
   const sizes = (mods, cls) => CONFIG.phoneSizes.map((p) => { const f = F('magsafe-' + p.id, mods); return f ? `<div class="${cls}">${f}<p class="plate-k">${p.name} <small>${p.short}</small></p></div>` : ''; }).join('');
+  const pl = $('#price-lines');   // Customize: the price lines, all from CONFIG
+  if (pl !== SINK) pl.innerHTML = CONFIG.variants.map((v) => { const u = PR.unitPrice(CONFIG, { variant: v.id }); return `<li><span><b>${v.name}</b><small>${v.note}</small></span><span class="pl-p">${u.list != null && CONFIG.showListPrice ? `<s>${money(u.list)}</s> ` : ''}<b>${money(u.now)}</b>${u.list != null && CONFIG.showListPrice ? `<small>${launchTag(u)}</small>` : ''}</span></li>`; }).join('')
+    + CONFIG.addons.map((a) => `<li><span><b>${a.name}</b><small>${a.note}</small></span><span class="pl-p"><b>+${money(Math.round(a.price * 100))}</b><small>Either model, any size</small></span></li>`).join('');
+  const sb = $('#size-blocks');   // Models: one block per phone size, matching the size-<id> beats (copy and picture from CONFIG)
+  if (sb !== SINK) sb.innerHTML = CONFIG.phoneSizes.map((p) => `<div class="blk" data-beat="size-${p.id}"><p class="eyebrow">${p.name}</p><h2>${p.short}</h2><p class="copy">${p.phones}. Choose this size if your phone is one of these.</p>${F('magsafe-' + p.id, ['sm', 'nocap'])}</div>`).join('');
   const s1 = $('#size-shots');
   if (s1 !== SINK) s1.innerHTML = sizes(['md'], 'plate');
 }
@@ -789,7 +794,7 @@ function bindPair() {
   const host = $('#pair-switch'); if (host === SINK) return;
   host.innerHTML = CONFIG.variants.map((v, i) => `<button type="button" aria-pressed="false" data-i="${i}">${v.name}</button>`).join('');
   $$('button', host).forEach((b) => b.addEventListener('click', () => setPair(+b.dataset.i)));
-  const pin = $('#pair .pin'); let x0 = null;
+  const pin = host.closest('.pin'); let x0 = null;
   pin.addEventListener('pointerdown', (e) => { x0 = e.clientX; });
   pin.addEventListener('pointerup', (e) => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 40 && window.innerWidth < 900) setPair(dx < 0 ? 1 : 0); });
   setPair(pairUI.index);

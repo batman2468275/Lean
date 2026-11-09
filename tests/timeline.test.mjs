@@ -13,10 +13,14 @@ import { CONFIG } from '../src/config.js';
 const VH = 900;
 /* chapters stacked like the real page: each chapter is h x vh tall and pins for L = h*vh - vh; the next starts right after */
 function stack(heights) { let top = 0; const out = {}; for (const [name, h] of Object.entries(heights)) { out[name] = { top, L: Math.max(0, h * VH - VH) }; top += h * VH; } return out; }
-const HEIGHTS = {
-  '/': { hero: 2.6 }, '/models': { pair: 2.4, cut: 2.6, cutout: 4.2, magsafe: 3 }, '/design': { design: 3.4 }, '/colors': { colors: 5 },
-  '/customize': { studio: 1 }, '/about': { about: 1.7 }, '/suggestions': { ideas: 1.5 },
-};
+/* the chapter heights come from the real page markup (style="--h:N" on each section with data-ch), so the tests always check what ships */
+import fs from 'node:fs';
+const PAGE_FILE = { '/': 'home', '/models': 'models', '/design': 'design', '/colors': 'colors', '/customize': 'customize', '/about': 'about', '/suggestions': 'suggestions' };
+const HEIGHTS = {};
+for (const [route, f] of Object.entries(PAGE_FILE)) {
+  const html = fs.readFileSync(new URL(`../src/pages/${f}.html`, import.meta.url), 'utf8'); HEIGHTS[route] = {};
+  for (const m of html.matchAll(/<section[^>]*data-ch="([\w-]+)"[^>]*style="--h:([\d.]+)"/g)) HEIGHTS[route][m[1]] = +m[2];
+}
 const SPECS = { '/': home, '/models': models, '/design': design, '/colors': colors, '/customize': customize, '/about': about, '/suggestions': suggestions };
 const near = (a, b, eps = 1e-6) => Math.abs(a - b) <= eps;
 
@@ -73,13 +77,14 @@ test('the slot is cut during its own beat, linearly, and stays cut', () => {
 });
 test('colour spin is linear: rotY advances at a constant rate across all colour beats', () => {
   const tl = compile(colors, stack(HEIGHTS['/colors'])); const out = {};
-  const L = stack(HEIGHTS['/colors']).colors.L; let prev = null, rate = null;
-  for (let i = 1; i < 40; i++) { tl.sample(i * L / 40, out); if (prev !== null) { const d = out.rotY - prev; if (rate === null) rate = d; assert.ok(near(d, rate, 1e-9), 'rotY step ' + i); } prev = out.rotY; }
+  const r0 = tl.range(CONFIG.cycle[0]), r1 = tl.range(CONFIG.cycle[CONFIG.cycle.length - 1]); let prev = null, rate = null;
+  for (let i = 1; i < 40; i++) { tl.sample(r0.y0 + i * (r1.y1 - r0.y0) / 40, out); if (prev !== null) { const d = out.rotY - prev; if (rate === null) rate = d; assert.ok(near(d, rate, 1e-9), 'rotY step ' + i); } prev = out.rotY; }
 });
 test('one colour beat per colour, in the CONFIG order, each carrying its colour', () => {
   const tl = compile(colors, stack(HEIGHTS['/colors']));
   assert.deepEqual(tl.segs.filter((s) => s.color).map((s) => s.color), CONFIG.cycle);
-  assert.deepEqual(tl.names, CONFIG.cycle);
+  assert.deepEqual(tl.names.filter((n) => CONFIG.cycle.includes(n)), CONFIG.cycle);
+  assert.deepEqual(tl.names.filter((n) => !CONFIG.cycle.includes(n)), ['intro', 'lineup'], 'an intro and a line-up around the colours');
 });
 test('beatProgress and active() read the same beat positions the camera uses', () => {
   const tl = compile(design, stack(HEIGHTS['/design'])); const r = tl.range('lean');
@@ -106,9 +111,28 @@ test('portrait adjustment never compounds: backing off by k is applied once per 
 });
 test('portrait overrides persist into the next chapter (the pair stays where the narrow layout put it until a beat moves it)', () => {
   const tl = compile(models, stack(HEIGHTS['/models']), (ch) => (ch === 'pair' ? { sy: -0.05, k: 1, over: { cx: -150, px: 150 } } : null)); const out = {};
-  const cut = tl.range('bases-part'); tl.sample(cut.y0 + 0.01, out); assert.ok(near(out.cx, -150, 0.5) && near(out.px, 150, 0.5), `cx ${out.cx} px ${out.px}`);
+  const cut = tl.range('regular-leaves'); tl.sample(cut.y0 + 0.01, out); assert.ok(near(out.cx, -150, 0.5) && near(out.px, 150, 0.5), `cx ${out.cx} px ${out.px}`);
   tl.sample(cut.y1, out); assert.equal(out.cx, 0); assert.equal(out.px, 420);
 });
 test('sampling does not allocate objects (it writes into the object it is given)', () => {
   const tl = compile(models, stack(HEIGHTS['/models'])); const out = {}; const res = tl.sample(1234, out); assert.equal(res, out);
+});
+
+const MIN_BEAT_SCREENS = 0.4, MAX_HOLD = 0.12;
+test('every chapter: beats cover 0 to 1 (no hold longer than 0.12), none shorter than 0.4 screens, and each chapter has a measured height', () => {
+  for (const [route, spec] of Object.entries(SPECS)) for (const [ch, c] of Object.entries(spec.chapters)) {
+    const h = HEIGHTS[route][ch]; assert.ok(h, `${route}/${ch}: no section with data-ch="${ch}" and --h in the page markup`);
+    const L = Math.max(0, h - 1), beats = [...c.beats].sort((a, b) => a.from - b.from); let end = 0;
+    for (const b of beats) {
+      assert.ok(b.from - end <= MAX_HOLD + 1e-9, `${route}/${ch}: ${(b.from - end).toFixed(2)} of nothing happening before ${b.name}`); end = b.to;
+      if (L > 0.5) assert.ok((b.to - b.from) * L >= MIN_BEAT_SCREENS - 1e-9, `${route}/${ch}/${b.name}: ${((b.to - b.from) * L).toFixed(2)} screens, minimum ${MIN_BEAT_SCREENS}`);
+    }
+    assert.ok(1 - end <= MAX_HOLD + 1e-9, `${route}/${ch}: ${(1 - end).toFixed(2)} of nothing happening after the last beat`);
+  }
+});
+test('every beat name used by a copy block exists in its page timeline', () => {
+  for (const [route, f] of Object.entries(PAGE_FILE)) {
+    const html = fs.readFileSync(new URL(`../src/pages/${f}.html`, import.meta.url), 'utf8'); const names = new Set(compile(SPECS[route], stack(HEIGHTS[route])).names);
+    for (const m of html.matchAll(/class="blk[^"]*" data-beat="([^"]+)"/g)) for (const n of m[1].split(' ')) assert.ok(names.has(n), `${route}: copy block for beat "${n}" has no beat`);
+  }
 });

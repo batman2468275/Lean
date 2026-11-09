@@ -51,6 +51,13 @@ export const BASE = {
 };
 export const KEYS = Object.keys(BASE);
 
+/** Build a chapter's beats from rows [name, screens, pose, extra?]. `screens` is how much scroll the beat gets (in screen heights); the rows' total must equal the chapter's
+ *  --h minus 1 (its pinned scroll length), which tests/timeline.test.mjs checks against the page markup. Fractions are computed here so beats always tile 0..1 with no gap. */
+export function seq(rows) {
+  const T = rows.reduce((a, r) => a + r[1], 0); let c = 0;
+  return rows.map(([name, w, pose, extra]) => { const b = { name, from: c / T, to: (c + w) / T, pose, ...(extra || {}) }; c += w; return b; });
+}
+
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 /** value on a cardinal spline through p0..p3 at t in 0..1 (between p1 and p2) */
 export function hermite(p0, p1, p2, p3, t) {
