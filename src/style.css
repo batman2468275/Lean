@@ -9,7 +9,7 @@
      3. NATURE        <html data-nature="0|1|2"> dials the organic seasoning (see "Nature touches" at the end of the tokens):
                         0 pure tech, 1 (default) a little nature, 2 level 1 plus thin vines, leaf glyphs and filled waves
    Two greens, kept apart: ELECTRIC GREEN #35f07f is the site's UI accent (buttons, eyebrows, focus rings, glow, the wordmark "n").
-   MISTLETOE #789A52 is the PRODUCT's default colour and the "nature" accent. Never use both in one component.
+   MISTLETOE #5F7F3B is the PRODUCT's default colour and the "nature" accent. Never use both in one component.
    Rules the colours follow (tests/contrast.test.mjs checks them): body text 4.5:1 or better, graphics (the wordmark's "n", focus ring) 3:1.
    Layout concept: one fixed WebGL stage behind a long scroll. Story chapters are transparent over the dark stage;
    after the story, opaque panels slide over it like Apple's product pages.
@@ -28,7 +28,7 @@
   --paper-2: #e3e6e1;
   --paper-3: #d9ddd7;
   --paper-ink: #131513;
-  --mistletoe: #789A52;       /* the product's default colour: NOT a UI colour */
+  --mistletoe: #5F7F3B;       /* the product's default colour: NOT a UI colour */
 
   /* ---------- type: Geist for everything, Geist Mono for small spec-sheet labels ---------- */
   --font: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;

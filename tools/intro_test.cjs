@@ -4,7 +4,7 @@
 const { launch, withSite } = require('./launch.cjs');
 const { execFileSync } = require('child_process');
 // stand pixels (Mistletoe green) in the lower middle of a 1440x900 screenshot: the page behind it is near-black, so zero means an empty stage
-const count = (file) => +execFileSync('python3', ['-I', '-c', `import sys\nfrom PIL import Image\nim=Image.open(sys.argv[1]).convert('RGB'); w,h=im.size; n=0\nfor y in range(int(h*.35),int(h*.9),2):\n  for x in range(int(w*.3),int(w*.7),2):\n    r,g,b=im.getpixel((x,y))\n    if g>90 and g>b+25 and g>=r: n+=1\nprint(n)`, file]).toString().trim();
+const count = (file) => +execFileSync('python3', ['-I', '-c', `import sys\nfrom PIL import Image\nim=Image.open(sys.argv[1]).convert('RGB'); w,h=im.size; n=0\nfor y in range(int(h*.35),int(h*.9),2):\n  for x in range(int(w*.3),int(w*.7),2):\n    r,g,b=im.getpixel((x,y))\n    if g>70 and g>b+20 and g>=r: n+=1\nprint(n)`, file]).toString().trim();
 const OUT = process.argv[2] || '.';
 let fails = 0;
 const ok = (c, m, d = '') => { console.log((c ? 'PASS ' : 'FAIL ') + m + (d ? '  ' + d : '')); if (!c) fails++; };

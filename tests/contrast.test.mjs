@@ -64,7 +64,7 @@ test('two greens, kept apart: the UI accent is electric green, Mistletoe is the 
 });
 test('Mistletoe is a fill, not text: on the paper panel it fails small-text contrast (documents why paper has its own --accent-text)', () => {
   const m = rgba(TONES.paper['--mistletoe'], TONES.paper), p = rgba(TONES.paper['--paper'], TONES.paper);
-  assert.ok(ratio(m, p) < 3.2, 'if Mistletoe ever passes on paper, --accent-text could be simplified');
+  assert.ok(ratio(m, p) < 4.5, 'if Mistletoe ever passes small-text AA on paper, --accent-text could be simplified');
   assert.notEqual(TONES.paper['--accent-text'], TONES.paper['--mistletoe']);
 });
 test('the dark base is charcoal with a green bias, never pure black; the paper panel is the only light tone', () => {

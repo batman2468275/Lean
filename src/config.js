@@ -36,7 +36,7 @@ export const CONFIG = {
      `look: 'black'` marks a colour whose product images are rendered with a real dark material (tools/render_views.cjs, TAG=-black)
      instead of the white render the page tints, because multiplying a white render by near-black flattens the ribs. */
   colors: [
-    { id: 'mistletoe', name: 'Mistletoe Green', hex: '#789A52' },   // tuned by eye on the rendered stand (the brief's starting #6E9A5C read slightly minty)
+    { id: 'mistletoe', name: 'Mistletoe Green', hex: '#5F7F3B' },   // tuned by eye on the rendered stand (the brief's starting #6E9A5C read slightly minty)
     { id: 'black',     name: 'Black',           hex: '#17181a', look: 'black' },
     { id: 'arctic',    name: 'Arctic White',    hex: '#e8eaec' },
     { id: 'sky',       name: 'Sky Blue',        hex: '#7EC8F2' },

@@ -15,7 +15,7 @@ const backdrop = plate
 const og = `<!doctype html><meta charset="utf-8"><style>
 *{box-sizing:border-box}html,body{margin:0;width:1200px;height:630px;overflow:hidden}
 body{position:relative;font-family:"Geist",-apple-system,"SF Pro Display","Segoe UI",system-ui,sans-serif;color:#f4f6f4;${backdrop}}
-.pool{position:absolute;right:20px;bottom:-130px;width:700px;height:320px;border-radius:50%;background:radial-gradient(closest-side,rgba(120,154,82,.5),transparent);}
+.pool{position:absolute;right:20px;bottom:-130px;width:700px;height:320px;border-radius:50%;background:radial-gradient(closest-side,rgba(95,127,59,.5),transparent);}
 .stand{position:absolute;right:50px;top:48px;width:540px;height:540px;filter:url(#t) drop-shadow(0 30px 40px rgba(0,0,0,.6))}
 .reg{position:absolute;width:22px;height:22px;opacity:.5}.reg:before,.reg:after{content:"";position:absolute;background:#a5aca6}.reg:before{left:0;right:0;top:50%;height:1px}.reg:after{top:0;bottom:0;left:50%;width:1px}
 .wm{position:absolute;left:78px;top:126px;width:500px}

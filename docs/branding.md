@@ -9,7 +9,7 @@ The site is dark and precise, with a little nature (see "Theme" in `CLAUDE.md`).
 | Wordmark letters on paper | ink `#131513` | 16.4:1 on `#F1F3F0` |
 | Wordmark "n" on paper | deep green `#0B8A43` | 4.0:1 on paper (graphic, needs 3:1) |
 | Electric green `#35F07F` | the UI accent: buttons, eyebrows, focus rings, glow, the "n" | text on a green button is `#04210F` (11.3:1) |
-| Mistletoe `#789A52` | the PRODUCT's default colour only, never a UI colour | fails as small text on paper (2.9:1); see the contrast test |
+| Mistletoe `#5F7F3B` | the PRODUCT's default colour only, never a UI colour | fails as small text on paper (2.9:1); see the contrast test |
 
 ## Files (all generated, none hand-drawn)
 

@@ -10,7 +10,7 @@ const line = (o) => ({ variant: 'plain', color: 'mistletoe', magsafe: false, mod
 
 test('config: exactly five colours, none custom, cycle matches', () => {
   assert.deepEqual(CONFIG.colors.map((c) => c.id), ['mistletoe', 'black', 'arctic', 'sky', 'orange']);
-  assert.equal(CONFIG.colors.find((c) => c.id === 'mistletoe').hex.toLowerCase(), '#789a52');
+  assert.equal(CONFIG.colors.find((c) => c.id === 'mistletoe').hex.toLowerCase(), '#5f7f3b');
   assert.equal(CONFIG.colors.find((c) => c.id === 'black').hex.toLowerCase(), '#17181a');
   assert.equal(CONFIG.colors.find((c) => c.id === 'sky').hex.toLowerCase(), '#7ec8f2');
   assert.equal(CONFIG.defaultColor, 'mistletoe');

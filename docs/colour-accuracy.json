@@ -3,17 +3,17 @@
     "colour": "Mistletoe Green",
     "id": "mistletoe",
     "model": "plain",
-    "target": "#789a52",
-    "sampled": "#7e9f5b",
-    "dE": 3.1
+    "target": "#5f7f3b",
+    "sampled": "#678548",
+    "dE": 4.8
   },
   {
     "colour": "Mistletoe Green",
     "id": "mistletoe",
     "model": "cutout",
-    "target": "#789a52",
-    "sampled": "#7e9f5b",
-    "dE": 3.1
+    "target": "#5f7f3b",
+    "sampled": "#678548",
+    "dE": 4.8
   },
   {
     "colour": "Black",
