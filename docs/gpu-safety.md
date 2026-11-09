@@ -11,6 +11,9 @@ On a crop of the lit floor (not the cast shadow), John's iPad screenshot has chr
 ## Suspects in this pipeline
 Transparent canvas composited over a CSS underlay and under `backdrop-filter` and `mask-image` layers; a 5.6 megapixel buffer with MSAA on an iPad in portrait; a 1400 x 1400 shadow-receiving floor with a 340-unit shadow frustum; three.js's per-pixel-noise PCF shadow sampling; three additive-blended materials; half-float PMREM environment targets; no device detection (iPadOS reports itself as a Mac); and `renderer.setSize` on every resize event, which fires when the iOS toolbar shows and hides and re-allocates (and clears) the canvas.
 
+## Update: it is every Apple device, so the safe profile is used on all of them
+John reports the speckle on iPads, iPhones **and MacBooks**. That points at Apple's graphics driver rather than at touch screens, so the "touch" (safe) profile below is now the default on **any Apple device** (user agent says Macintosh, iPhone, iPad or iPod, or the browser vendor is Apple), not just on touch screens. Macs keep a larger pixel budget (8 MP) so a retina display is not made soft; touch devices keep 3 MP. `?gl=profile-desktop` forces the old path for comparison. This is still unverified on real hardware: the `?gl=` flags and `?debug=gl` report are how the remaining cause gets isolated.
+
 ## The touch profile (`src/gpu.js`)
 `GPU.profile` is `touch` when the user agent says iPhone, iPad, iPod or Android, **or** it says Macintosh with `maxTouchPoints > 1` (iPadOS), **or** `(pointer: coarse)` matches. `?gl=profile-touch` / `?gl=profile-desktop` force it. On touch:
 
